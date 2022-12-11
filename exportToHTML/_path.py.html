@@ -1,0 +1,48 @@
+<html>
+<head>
+<title>_path.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #629755; font-style: italic;}
+.ls0 { height: 1px; border-width: 0; color: #4d4d4d; background-color:#4d4d4d}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+_path.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">os</span>
+<span class="s0">from </span><span class="s1">typing </span><span class="s0">import </span><span class="s1">Union</span>
+
+<span class="s1">_Path = Union[str</span><span class="s0">, </span><span class="s1">os.PathLike]</span>
+
+
+<span class="s0">def </span><span class="s1">ensure_directory(path):</span>
+    <span class="s2">&quot;&quot;&quot;Ensure that the parent directory of `path` exists&quot;&quot;&quot;</span>
+    <span class="s1">dirname = os.path.dirname(path)</span>
+    <span class="s1">os.makedirs(dirname</span><span class="s0">, </span><span class="s1">exist_ok=</span><span class="s0">True</span><span class="s1">)</span>
+
+<hr class="ls0"><span class="s0">def </span><span class="s1">same_path(p1: _Path</span><span class="s0">, </span><span class="s1">p2: _Path) -&gt; bool:</span>
+    <span class="s2">&quot;&quot;&quot;Differs from os.path.samefile because it does not require paths to exist. 
+    Purely string based (no comparison between i-nodes). 
+    &gt;&gt;&gt; same_path(&quot;a/b&quot;, &quot;./a/b&quot;) 
+    True 
+    &gt;&gt;&gt; same_path(&quot;a/b&quot;, &quot;a/./b&quot;) 
+    True 
+    &gt;&gt;&gt; same_path(&quot;a/b&quot;, &quot;././a/b&quot;) 
+    True 
+    &gt;&gt;&gt; same_path(&quot;a/b&quot;, &quot;./a/b/c/..&quot;) 
+    True 
+    &gt;&gt;&gt; same_path(&quot;a/b&quot;, &quot;../a/b/c&quot;) 
+    False 
+    &gt;&gt;&gt; same_path(&quot;a&quot;, &quot;a/b&quot;) 
+    False 
+    &quot;&quot;&quot;</span>
+    <span class="s0">return </span><span class="s1">os.path.normpath(p1) == os.path.normpath(p2)</span>
+</pre>
+</body>
+</html>

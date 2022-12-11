@@ -1,0 +1,57 @@
+<html>
+<head>
+<title>base.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #629755; font-style: italic;}
+.ls0 { height: 1px; border-width: 0; color: #4d4d4d; background-color:#4d4d4d}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+base.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">abc</span>
+
+<span class="s0">from </span><span class="s1">pip._internal.index.package_finder </span><span class="s0">import </span><span class="s1">PackageFinder</span>
+<span class="s0">from </span><span class="s1">pip._internal.metadata.base </span><span class="s0">import </span><span class="s1">BaseDistribution</span>
+<span class="s0">from </span><span class="s1">pip._internal.req </span><span class="s0">import </span><span class="s1">InstallRequirement</span>
+
+
+<span class="s0">class </span><span class="s1">AbstractDistribution(metaclass=abc.ABCMeta):</span>
+    <span class="s2">&quot;&quot;&quot;A base class for handling installable artifacts. 
+ 
+    The requirements for anything installable are as follows: 
+ 
+     - we must be able to determine the requirement name 
+       (or we can't correctly handle the non-upgrade case). 
+ 
+     - for packages with setup requirements, we must also be able 
+       to determine their requirements without installing additional 
+       packages (for the same reason as run-time dependencies) 
+ 
+     - we must be able to create a Distribution object exposing the 
+       above metadata. 
+    &quot;&quot;&quot;</span>
+
+    <span class="s0">def </span><span class="s1">__init__(self</span><span class="s0">, </span><span class="s1">req: InstallRequirement) -&gt; </span><span class="s0">None</span><span class="s1">:</span>
+        <span class="s1">super().__init__()</span>
+        <span class="s1">self.req = req</span>
+<hr class="ls0">    <span class="s1">@abc.abstractmethod</span>
+    <span class="s0">def </span><span class="s1">get_metadata_distribution(self) -&gt; BaseDistribution:</span>
+        <span class="s0">raise </span><span class="s1">NotImplementedError()</span>
+<hr class="ls0">    <span class="s1">@abc.abstractmethod</span>
+    <span class="s0">def </span><span class="s1">prepare_distribution_metadata(</span>
+        <span class="s1">self</span><span class="s0">,</span>
+        <span class="s1">finder: PackageFinder</span><span class="s0">,</span>
+        <span class="s1">build_isolation: bool</span><span class="s0">,</span>
+        <span class="s1">check_build_deps: bool</span><span class="s0">,</span>
+    <span class="s1">) -&gt; </span><span class="s0">None</span><span class="s1">:</span>
+        <span class="s0">raise </span><span class="s1">NotImplementedError()</span>
+</pre>
+</body>
+</html>

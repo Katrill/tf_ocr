@@ -1,0 +1,29 @@
+<html>
+<head>
+<title>setup.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+setup.py</font>
+</center></td></tr></table>
+<pre><span class="s0">def </span><span class="s1">configuration(parent_package=</span><span class="s2">''</span><span class="s0">,</span><span class="s1">top_path=</span><span class="s0">None</span><span class="s1">):</span>
+    <span class="s0">from </span><span class="s1">numpy.distutils.misc_util </span><span class="s0">import </span><span class="s1">Configuration</span>
+    <span class="s1">config = Configuration(</span><span class="s2">'polynomial'</span><span class="s0">, </span><span class="s1">parent_package</span><span class="s0">, </span><span class="s1">top_path)</span>
+    <span class="s1">config.add_subpackage(</span><span class="s2">'tests'</span><span class="s1">)</span>
+    <span class="s1">config.add_data_files(</span><span class="s2">'*.pyi'</span><span class="s1">)</span>
+    <span class="s0">return </span><span class="s1">config</span>
+
+<span class="s0">if </span><span class="s1">__name__ == </span><span class="s2">'__main__'</span><span class="s1">:</span>
+    <span class="s0">from </span><span class="s1">numpy.distutils.core </span><span class="s0">import </span><span class="s1">setup</span>
+    <span class="s1">setup(configuration=configuration)</span>
+</pre>
+</body>
+</html>

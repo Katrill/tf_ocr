@@ -1,0 +1,119 @@
+<html>
+<head>
+<title>_common.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #808080;}
+.s3 { color: #629755; font-style: italic;}
+.s4 { color: #6a8759;}
+.ls0 { height: 1px; border-width: 0; color: #4d4d4d; background-color:#4d4d4d}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+_common.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">os</span>
+<span class="s0">import </span><span class="s1">pathlib</span>
+<span class="s0">import </span><span class="s1">tempfile</span>
+<span class="s0">import </span><span class="s1">functools</span>
+<span class="s0">import </span><span class="s1">contextlib</span>
+<span class="s0">import </span><span class="s1">types</span>
+<span class="s0">import </span><span class="s1">importlib</span>
+
+<span class="s0">from </span><span class="s1">typing </span><span class="s0">import </span><span class="s1">Union</span><span class="s0">, </span><span class="s1">Optional</span>
+<span class="s0">from </span><span class="s1">.abc </span><span class="s0">import </span><span class="s1">ResourceReader</span><span class="s0">, </span><span class="s1">Traversable</span>
+
+<span class="s0">from </span><span class="s1">._compat </span><span class="s0">import </span><span class="s1">wrap_spec</span>
+
+<span class="s1">Package = Union[types.ModuleType</span><span class="s0">, </span><span class="s1">str]</span>
+
+
+<span class="s0">def </span><span class="s1">files(package):</span>
+    <span class="s2"># type: (Package) -&gt; Traversable</span>
+    <span class="s3">&quot;&quot;&quot; 
+    Get a Traversable resource from a package 
+    &quot;&quot;&quot;</span>
+    <span class="s0">return </span><span class="s1">from_package(get_package(package))</span>
+
+<hr class="ls0"><span class="s0">def </span><span class="s1">get_resource_reader(package):</span>
+    <span class="s2"># type: (types.ModuleType) -&gt; Optional[ResourceReader]</span>
+    <span class="s3">&quot;&quot;&quot; 
+    Return the package's loader if it's a ResourceReader. 
+    &quot;&quot;&quot;</span>
+    <span class="s2"># We can't use</span>
+    <span class="s2"># a issubclass() check here because apparently abc.'s __subclasscheck__()</span>
+    <span class="s2"># hook wants to create a weak reference to the object, but</span>
+    <span class="s2"># zipimport.zipimporter does not support weak references, resulting in a</span>
+    <span class="s2"># TypeError.  That seems terrible.</span>
+    <span class="s1">spec = package.__spec__</span>
+    <span class="s1">reader = getattr(spec.loader</span><span class="s0">, </span><span class="s4">'get_resource_reader'</span><span class="s0">, None</span><span class="s1">)  </span><span class="s2"># type: ignore</span>
+    <span class="s0">if </span><span class="s1">reader </span><span class="s0">is None</span><span class="s1">:</span>
+        <span class="s0">return None</span>
+    <span class="s0">return </span><span class="s1">reader(spec.name)  </span><span class="s2"># type: ignore</span>
+
+<hr class="ls0"><span class="s0">def </span><span class="s1">resolve(cand):</span>
+    <span class="s2"># type: (Package) -&gt; types.ModuleType</span>
+    <span class="s0">return </span><span class="s1">cand </span><span class="s0">if </span><span class="s1">isinstance(cand</span><span class="s0">, </span><span class="s1">types.ModuleType) </span><span class="s0">else </span><span class="s1">importlib.import_module(cand)</span>
+
+<hr class="ls0"><span class="s0">def </span><span class="s1">get_package(package):</span>
+    <span class="s2"># type: (Package) -&gt; types.ModuleType</span>
+    <span class="s3">&quot;&quot;&quot;Take a package name or module object and return the module. 
+ 
+    Raise an exception if the resolved module is not a package. 
+    &quot;&quot;&quot;</span>
+    <span class="s1">resolved = resolve(package)</span>
+    <span class="s0">if </span><span class="s1">wrap_spec(resolved).submodule_search_locations </span><span class="s0">is None</span><span class="s1">:</span>
+        <span class="s0">raise </span><span class="s1">TypeError(</span><span class="s4">f'</span><span class="s0">{</span><span class="s1">package</span><span class="s0">!r} </span><span class="s4">is not a package'</span><span class="s1">)</span>
+    <span class="s0">return </span><span class="s1">resolved</span>
+
+<hr class="ls0"><span class="s0">def </span><span class="s1">from_package(package):</span>
+    <span class="s3">&quot;&quot;&quot; 
+    Return a Traversable object for the given package. 
+ 
+    &quot;&quot;&quot;</span>
+    <span class="s1">spec = wrap_spec(package)</span>
+    <span class="s1">reader = spec.loader.get_resource_reader(spec.name)</span>
+    <span class="s0">return </span><span class="s1">reader.files()</span>
+
+<hr class="ls0"><span class="s1">@contextlib.contextmanager</span>
+<span class="s0">def </span><span class="s1">_tempfile(reader</span><span class="s0">, </span><span class="s1">suffix=</span><span class="s4">''</span><span class="s1">):</span>
+    <span class="s2"># Not using tempfile.NamedTemporaryFile as it leads to deeper 'try'</span>
+    <span class="s2"># blocks due to the need to close the temporary file to work on Windows</span>
+    <span class="s2"># properly.</span>
+    <span class="s1">fd</span><span class="s0">, </span><span class="s1">raw_path = tempfile.mkstemp(suffix=suffix)</span>
+    <span class="s0">try</span><span class="s1">:</span>
+        <span class="s0">try</span><span class="s1">:</span>
+            <span class="s1">os.write(fd</span><span class="s0">, </span><span class="s1">reader())</span>
+        <span class="s0">finally</span><span class="s1">:</span>
+            <span class="s1">os.close(fd)</span>
+        <span class="s0">del </span><span class="s1">reader</span>
+        <span class="s0">yield </span><span class="s1">pathlib.Path(raw_path)</span>
+    <span class="s0">finally</span><span class="s1">:</span>
+        <span class="s0">try</span><span class="s1">:</span>
+            <span class="s1">os.remove(raw_path)</span>
+        <span class="s0">except </span><span class="s1">FileNotFoundError:</span>
+            <span class="s0">pass</span>
+
+<hr class="ls0"><span class="s1">@functools.singledispatch</span>
+<span class="s0">def </span><span class="s1">as_file(path):</span>
+    <span class="s3">&quot;&quot;&quot; 
+    Given a Traversable object, return that object as a 
+    path on the local file system in a context manager. 
+    &quot;&quot;&quot;</span>
+    <span class="s0">return </span><span class="s1">_tempfile(path.read_bytes</span><span class="s0">, </span><span class="s1">suffix=path.name)</span>
+
+<hr class="ls0"><span class="s1">@as_file.register(pathlib.Path)</span>
+<span class="s1">@contextlib.contextmanager</span>
+<span class="s0">def </span><span class="s1">_(path):</span>
+    <span class="s3">&quot;&quot;&quot; 
+    Degenerate behavior for pathlib.Path objects. 
+    &quot;&quot;&quot;</span>
+    <span class="s0">yield </span><span class="s1">path</span>
+</pre>
+</body>
+</html>

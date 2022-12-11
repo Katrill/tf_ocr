@@ -1,0 +1,198 @@
+<html>
+<head>
+<title>data2.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #808080;}
+.s3 { color: #6a8759;}
+.s4 { color: #6897bb;}
+.ls0 { height: 1px; border-width: 0; color: #4d4d4d; background-color:#4d4d4d}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+data2.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">PIL</span>
+<span class="s0">import </span><span class="s1">os</span>
+<span class="s0">import </span><span class="s1">matplotlib.pyplot </span><span class="s0">as </span><span class="s1">plt</span>
+<span class="s0">import </span><span class="s1">tensorflow </span><span class="s0">as </span><span class="s1">tf</span>
+<span class="s0">from </span><span class="s1">PIL </span><span class="s0">import </span><span class="s1">Image</span><span class="s0">, </span><span class="s1">ImageFont</span><span class="s0">, </span><span class="s1">ImageDraw</span>
+<span class="s0">from </span><span class="s1">tensorflow </span><span class="s0">import </span><span class="s1">keras</span>
+<span class="s0">import </span><span class="s1">pathlib</span>
+<span class="s0">from </span><span class="s1">tensorflow.keras </span><span class="s0">import </span><span class="s1">layers</span>
+<span class="s0">import </span><span class="s1">tensorflow_datasets </span><span class="s0">as </span><span class="s1">tfds</span>
+<span class="s2"># from tensorflow.keras.preprocessing import image_dataset_from_directory</span>
+<span class="s0">import </span><span class="s1">numpy </span><span class="s0">as </span><span class="s1">np</span>
+<span class="s0">from </span><span class="s1">glob </span><span class="s0">import </span><span class="s1">glob</span>
+<span class="s2"># https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html</span>
+<span class="s0">from </span><span class="s1">keras.preprocessing.image </span><span class="s0">import </span><span class="s1">ImageDataGenerator</span>
+<span class="s2">#load_img, img_to_array</span>
+
+
+<span class="s2"># datagen = ImageDataGenerator(</span>
+<span class="s2">#         rotation_range=40,</span>
+<span class="s2">#         width_shift_range=0.2,</span>
+<span class="s2">#         height_shift_range=0.2,</span>
+<span class="s2">#         # rescale=1./255,</span>
+<span class="s2">#         shear_range=20,</span>
+<span class="s2">#         zoom_range=[0.2, 1.5],</span>
+<span class="s2">#         horizontal_flip=True,</span>
+<span class="s2">#         fill_mode='nearest')</span>
+
+
+<span class="s2"># data_url = r&quot;C:\Users\Admin\Downloads\alphabet&quot;</span>
+<span class="s2"># data_dir = tf.keras.utils.get_file(origin=dataset_url,</span>
+<span class="s2">#                                    fname='flower_photos',</span>
+<span class="s2">#                                    untar=True)</span>
+<span class="s1">data_dir = pathlib.Path(</span><span class="s3">r&quot;C:\Users\Admin\Downloads\alphabet&quot;</span><span class="s1">)</span>
+
+<span class="s2"># Parameters</span>
+<span class="s1">batch_size = </span><span class="s4">2</span>
+<span class="s1">img_height = </span><span class="s4">28</span>
+<span class="s1">img_width = </span><span class="s4">28</span>
+
+<span class="s2"># amount of images in dataset</span>
+<span class="s1">image_count = len(list(data_dir.glob(</span><span class="s3">'*/*.png'</span><span class="s1">)))</span>
+<span class="s1">print(</span><span class="s3">&quot;image_count&quot;</span><span class="s0">, </span><span class="s1">image_count)</span>
+
+<span class="s2"># create input pipeline</span>
+<span class="s1">list_ds = tf.data.Dataset.list_files(str(data_dir/</span><span class="s3">'*/*'</span><span class="s1">)</span><span class="s0">, </span><span class="s1">shuffle=</span><span class="s0">False</span><span class="s1">)</span>
+<span class="s1">list_ds = list_ds.shuffle(image_count</span><span class="s0">, </span><span class="s1">reshuffle_each_iteration=</span><span class="s0">False</span><span class="s1">)</span>
+
+<span class="s2"># print examples</span>
+<span class="s2"># for f in list_ds.take(5):</span>
+<span class="s2">#     print(f.numpy())</span>
+
+<span class="s2"># Tree file structure can be used to list class_names</span>
+<span class="s1">class_names = np.array(sorted([item.name </span><span class="s0">for </span><span class="s1">item </span><span class="s0">in </span><span class="s1">data_dir.glob(</span><span class="s3">'*'</span><span class="s1">) </span><span class="s0">if </span><span class="s1">item.name != </span><span class="s3">&quot;LICENSE.txt&quot;</span><span class="s1">]))</span>
+<span class="s1">print(</span><span class="s3">&quot;class_names&quot;</span><span class="s0">, </span><span class="s1">class_names)</span>
+
+<span class="s2"># Divide on train and val sets</span>
+<span class="s1">val_size = int(image_count * </span><span class="s4">0.2</span><span class="s1">)</span>
+<span class="s1">train_ds = list_ds.skip(val_size)</span>
+<span class="s1">val_ds = list_ds.take(val_size)</span>
+
+<span class="s1">print(</span><span class="s3">&quot;Train length&quot;</span><span class="s0">, </span><span class="s1">tf.data.experimental.cardinality(train_ds).numpy())</span>
+<span class="s1">print(</span><span class="s3">&quot;Val length&quot;</span><span class="s0">,  </span><span class="s1">tf.data.experimental.cardinality(val_ds).numpy())</span>
+
+
+<span class="s0">def </span><span class="s1">get_label(file_path):</span>
+    <span class="s2"># Make set (img, label) from file path</span>
+    <span class="s2"># Convert the path to a list of path components</span>
+    <span class="s1">parts = tf.strings.split(file_path</span><span class="s0">, </span><span class="s1">os.path.sep)</span>
+    <span class="s2"># The second to last is the class-directory</span>
+    <span class="s1">one_hot = parts[-</span><span class="s4">2</span><span class="s1">] == class_names</span>
+    <span class="s2"># Integer encode the label</span>
+    <span class="s0">return </span><span class="s1">tf.argmax(one_hot)</span>
+
+<hr class="ls0"><span class="s0">def </span><span class="s1">decode_img(img):</span>
+    <span class="s2"># Convert the compressed string to a 3D uint8 tensor</span>
+    <span class="s1">img = tf.io.decode_jpeg(img</span><span class="s0">, </span><span class="s1">channels=</span><span class="s4">1</span><span class="s1">)</span>
+    <span class="s2"># Resize the image to the desired size</span>
+    <span class="s0">return </span><span class="s1">tf.image.resize(img</span><span class="s0">, </span><span class="s1">[img_height</span><span class="s0">, </span><span class="s1">img_width])</span>
+
+<hr class="ls0"><span class="s0">def </span><span class="s1">process_path(file_path):</span>
+    <span class="s1">label = get_label(file_path)</span>
+    <span class="s2"># Load the raw data from the file as a string</span>
+    <span class="s1">img = tf.io.read_file(file_path)</span>
+    <span class="s1">img = decode_img(img)</span>
+    <span class="s0">return </span><span class="s1">img</span><span class="s0">, </span><span class="s1">label</span>
+
+
+<span class="s2"># Set `num_parallel_calls` so multiple images are loaded/processed in parallel.</span>
+<span class="s1">train_ds = train_ds.map(process_path</span><span class="s0">, </span><span class="s1">num_parallel_calls=tf.data.AUTOTUNE)</span>
+<span class="s1">val_ds = val_ds.map(process_path</span><span class="s0">, </span><span class="s1">num_parallel_calls=tf.data.AUTOTUNE)</span>
+
+<span class="s2"># print(&quot;train_ds type&quot;, type(train_ds))</span>
+
+<span class="s0">for </span><span class="s1">image</span><span class="s0">, </span><span class="s1">label </span><span class="s0">in </span><span class="s1">train_ds.take(</span><span class="s4">4</span><span class="s1">):</span>
+    <span class="s1">imageShape = image.numpy().shape</span>
+    <span class="s1">label = label.numpy()</span>
+    <span class="s1">labelName = class_names[np.argmax(label)]</span>
+    <span class="s1">print(</span><span class="s3">'Image Shape: {}, Label: {}, LabelName: {}'</span><span class="s1">.format(imageShape</span><span class="s0">, </span><span class="s1">label</span><span class="s0">, </span><span class="s1">labelName))</span>
+
+
+
+<span class="s2"># plt.imshow(train_ds[0])</span>
+
+
+<span class="s1">data_augmentation = tf.keras.Sequential([</span>
+  <span class="s1">tf.keras.layers.RandomFlip(</span><span class="s3">&quot;horizontal_and_vertical&quot;</span><span class="s1">)</span><span class="s0">,</span>
+  <span class="s1">tf.keras.layers.RandomRotation(</span><span class="s4">0.2</span><span class="s1">)</span><span class="s0">,</span>
+<span class="s1">])</span>
+<span class="s2">#</span>
+<span class="s2">#</span>
+<span class="s2">#</span>
+<span class="s2"># Add the image to a batch.</span>
+<span class="s2"># image = tf.expand_dims(image, 0)</span>
+
+<span class="s2"># get_label_name = metadata.features['label'].int2str</span>
+
+<span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">val_ds:</span>
+    <span class="s1">print(list(i)[</span><span class="s4">1</span><span class="s1">])</span>
+
+
+
+<span class="s2"># Add the image to a batch.</span>
+<span class="s2"># image = tf.expand_dims(image, 0)</span>
+
+
+
+
+<span class="s2"># train_ds = tf.keras.utils.image_dataset_from_directory(</span>
+<span class="s2">#   data_dir,</span>
+<span class="s2">#   validation_split=0.2,</span>
+<span class="s2">#   subset=&quot;training&quot;,</span>
+<span class="s2">#   seed=123,</span>
+<span class="s2">#   image_size=(img_height, img_width),</span>
+<span class="s2">#   batch_size=batch_size</span>
+<span class="s2"># )</span>
+<span class="s2"># val_ds = tf.keras.utils.image_dataset_from_directory(</span>
+<span class="s2">#   data_dir,</span>
+<span class="s2">#   validation_split=0.2,</span>
+<span class="s2">#   subset=&quot;validation&quot;,</span>
+<span class="s2">#   seed=123,</span>
+<span class="s2">#   image_size=(img_height, img_width),</span>
+<span class="s2">#   batch_size=batch_size)</span>
+<span class="s2">#</span>
+<span class="s2"># # class_names = train_ds.class_names</span>
+<span class="s2"># # print(class_names)</span>
+<span class="s2">#</span>
+<span class="s2"># for image_batch, labels_batch in train_ds:</span>
+<span class="s2">#   print(image_batch.shape)</span>
+<span class="s2">#   print(labels_batch.shape)</span>
+<span class="s2">#   break</span>
+<span class="s2">#</span>
+<span class="s2">#</span>
+<span class="s2"># num_classes = 5</span>
+<span class="s2">#</span>
+<span class="s2"># model = tf.keras.Sequential([</span>
+<span class="s2">#   tf.keras.layers.Rescaling(1./255),</span>
+<span class="s2">#   tf.keras.layers.Conv2D(32, 3, activation='relu'),</span>
+<span class="s2">#   tf.keras.layers.MaxPooling2D(),</span>
+<span class="s2">#   tf.keras.layers.Conv2D(32, 3, activation='relu'),</span>
+<span class="s2">#   tf.keras.layers.MaxPooling2D(),</span>
+<span class="s2">#   tf.keras.layers.Conv2D(32, 3, activation='relu'),</span>
+<span class="s2">#   tf.keras.layers.MaxPooling2D(),</span>
+<span class="s2">#   tf.keras.layers.Flatten(),</span>
+<span class="s2">#   tf.keras.layers.Dense(128, activation='relu'),</span>
+<span class="s2">#   tf.keras.layers.Dense(num_classes)</span>
+<span class="s2"># ])</span>
+<span class="s2">#</span>
+<span class="s2"># model.compile(</span>
+<span class="s2">#   optimizer='adam',</span>
+<span class="s2">#   loss=tf.losses.SparseCategoricalCrossentropy(from_logits=True),</span>
+<span class="s2">#   metrics=['accuracy'])</span>
+<span class="s2">#</span>
+<span class="s2"># model.fit(</span>
+<span class="s2">#   train_ds,</span>
+<span class="s2">#   validation_data=val_ds,</span>
+<span class="s2">#   epochs=3</span>
+<span class="s2"># )</span></pre>
+</body>
+</html>

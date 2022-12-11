@@ -1,0 +1,27 @@
+<html>
+<head>
+<title>nn_ocr.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+.s3 { color: #6897bb;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+nn_ocr.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">tensorflow </span><span class="s0">as </span><span class="s1">tf</span>
+<span class="s1">ImageDataGenerator = tf.keras.preprocessing.image.ImageDataGenerator</span>
+<span class="s1">TRAINING_DIR = </span><span class="s2">&quot;path/to/train/dataset&quot;</span>
+<span class="s1">train_datagen = ImageDataGenerator(rescale=</span><span class="s3">1.0 </span><span class="s1">/ </span><span class="s3">255.</span><span class="s1">)</span>
+<span class="s1">train_generator = train_datagen.flow_from_directory(TRAINING_DIR</span><span class="s0">,</span>
+                              <span class="s1">batch_size=</span><span class="s3">40</span><span class="s0">,</span>
+                              <span class="s1">class_mode=</span><span class="s2">'binary'</span><span class="s0">,</span>
+                              <span class="s1">target_size=(</span><span class="s3">278</span><span class="s0">,</span><span class="s3">278</span><span class="s1">))</span></pre>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<html>
+<head>
+<title>ocr3.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #808080;}
+.s3 { color: #6a8759;}
+.s4 { color: #6897bb;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+ocr3.py</font>
+</center></td></tr></table>
+<pre><span class="s0">from </span><span class="s1">imutils.perspective </span><span class="s0">import </span><span class="s1">four_point_transform</span>
+<span class="s0">import </span><span class="s1">pytesseract</span>
+<span class="s0">import </span><span class="s1">argparse</span>
+<span class="s0">import </span><span class="s1">imutils</span>
+<span class="s0">import </span><span class="s1">cv2</span>
+<span class="s0">import </span><span class="s1">re</span>
+
+<span class="s2"># convert the image to grayscale, blur it, and apply edge detection</span>
+<span class="s2"># to reveal the outline of the business card</span>
+<span class="s1">image = cv2.imread(</span><span class="s3">&quot;2.jpeg&quot;</span><span class="s1">)</span>
+<span class="s1">gray = cv2.cvtColor(image</span><span class="s0">, </span><span class="s1">cv2.COLOR_BGR2GRAY)</span>
+<span class="s1">blurred = cv2.GaussianBlur(gray</span><span class="s0">, </span><span class="s1">(</span><span class="s4">5</span><span class="s0">, </span><span class="s4">5</span><span class="s1">)</span><span class="s0">, </span><span class="s4">0</span><span class="s1">)</span>
+<span class="s1">edged = cv2.Canny(blurred</span><span class="s0">, </span><span class="s4">30</span><span class="s0">, </span><span class="s4">150</span><span class="s1">)</span>
+
+
+<span class="s2"># detect contours in the edge map, sort them by size (in descending order)</span>
+<span class="s2"># grab the largest contours</span>
+<span class="s1">cnts = cv2.findContours(edged.copy()</span><span class="s0">, </span><span class="s1">cv2.RETR_TREE</span><span class="s0">, </span><span class="s1">cv2.CHAIN_APPROX_SIMPLE)</span>
+<span class="s1">cnts = imutils.grab_contours(cnts)</span>
+<span class="s1">cnts = sorted(cnts</span><span class="s0">, </span><span class="s1">key=cv2.contourArea</span><span class="s0">, </span><span class="s1">reverse=</span><span class="s0">True</span><span class="s1">)</span><span class="s2">#[:5]</span>
+<span class="s1">print(cnts)</span>
+<span class="s2"># initialize a contour that corresponds to the business card outline</span>
+<span class="s1">cardCnt = </span><span class="s0">None</span>
+
+<span class="s2"># loop over the contours</span>
+<span class="s0">for </span><span class="s1">c </span><span class="s0">in </span><span class="s1">cnts:</span>
+    <span class="s2"># approximate the contour</span>
+    <span class="s1">peri = cv2.arcLength(c</span><span class="s0">, True</span><span class="s1">)</span>
+    <span class="s1">approx = cv2.approxPolyDP(c</span><span class="s0">, </span><span class="s4">0.02 </span><span class="s1">* peri</span><span class="s0">, True</span><span class="s1">)</span>
+    <span class="s2"># if this is the first contour we've encountered that has four</span>
+    <span class="s2"># vertices, then we can assume we've found the business card</span>
+    <span class="s0">if </span><span class="s1">len(approx) == </span><span class="s4">4</span><span class="s1">:</span>
+        <span class="s1">cardCnt = approx</span>
+        <span class="s0">break</span>
+<span class="s2"># if the business card contour is empty then our script could not</span>
+<span class="s2"># find the  outline of the card, so raise an error</span>
+<span class="s0">if </span><span class="s1">cardCnt </span><span class="s0">is None</span><span class="s1">:</span>
+    <span class="s0">raise </span><span class="s1">Exception(</span><span class="s3">&quot;Could not find receipt outline.&quot; &quot;Try debugging your edge detection and contour steps.&quot;</span><span class="s1">)</span>
+
+<span class="s1">output = image.copy()</span>
+<span class="s2"># cv2.drawContours(output, [cardCnt], -1, (0, 255, 0), 2)</span>
+<span class="s1">cv2.drawContours(output</span><span class="s0">, </span><span class="s1">cnts</span><span class="s0">, </span><span class="s1">-</span><span class="s4">1</span><span class="s0">, </span><span class="s1">(</span><span class="s4">0</span><span class="s0">, </span><span class="s4">255</span><span class="s0">, </span><span class="s4">0</span><span class="s1">)</span><span class="s0">, </span><span class="s4">2</span><span class="s1">)</span>
+<span class="s1">cv2.imshow(</span><span class="s3">&quot;Business Card Outline&quot;</span><span class="s0">, </span><span class="s1">output)</span>
+
+
+
+<span class="s2"># cv2.imshow('test', edged)</span>
+<span class="s1">cv2.waitKey(</span><span class="s4">0</span><span class="s1">)</span>
+</pre>
+</body>
+</html>

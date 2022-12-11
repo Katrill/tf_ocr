@@ -1,0 +1,124 @@
+<html>
+<head>
+<title>data4.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+.s3 { color: #808080;}
+.s4 { color: #6897bb;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+data4.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">os</span>
+<span class="s0">import </span><span class="s1">tensorflow </span><span class="s0">as </span><span class="s1">tf</span>
+<span class="s0">import </span><span class="s1">pathlib</span>
+<span class="s0">from </span><span class="s1">tensorflow </span><span class="s0">import </span><span class="s1">keras</span>
+<span class="s0">from </span><span class="s1">tensorflow.keras </span><span class="s0">import </span><span class="s1">layers</span>
+<span class="s0">import </span><span class="s1">numpy </span><span class="s0">as </span><span class="s1">np</span>
+<span class="s0">import </span><span class="s1">matplotlib.pyplot </span><span class="s0">as </span><span class="s1">plt</span>
+<span class="s0">import </span><span class="s1">PIL</span>
+<span class="s0">from </span><span class="s1">PIL </span><span class="s0">import </span><span class="s1">Image</span><span class="s0">, </span><span class="s1">ImageFont</span><span class="s0">, </span><span class="s1">ImageDraw</span>
+
+<span class="s1">data_dir = pathlib.Path(</span><span class="s2">r&quot;C:\Users\Admin\Downloads\alphabet&quot;</span><span class="s1">)</span>
+<span class="s3"># Parameters</span>
+<span class="s1">batch_size = </span><span class="s4">2</span>
+<span class="s1">img_height = </span><span class="s4">28</span>
+<span class="s1">img_width = </span><span class="s4">28</span>
+<span class="s3"># amount of images in dataset</span>
+<span class="s1">image_count = len(list(data_dir.glob(</span><span class="s2">'*/*.png'</span><span class="s1">)))</span>
+<span class="s1">print(</span><span class="s2">&quot;image_count&quot;</span><span class="s0">, </span><span class="s1">image_count)</span>
+<span class="s3"># look at one image</span>
+<span class="s2">&quot;&quot;&quot;a = list(data_dir.glob('а/*')) 
+im = PIL.Image.open(str(a[0])) 
+im.show()&quot;&quot;&quot;</span>
+<span class="s3"># train set</span>
+<span class="s1">train_ds = tf.keras.utils.image_dataset_from_directory(</span>
+  <span class="s1">data_dir</span><span class="s0">,</span>
+  <span class="s1">validation_split=</span><span class="s4">0.2</span><span class="s0">,</span>
+  <span class="s1">subset=</span><span class="s2">&quot;training&quot;</span><span class="s0">,</span>
+  <span class="s1">seed=</span><span class="s4">123</span><span class="s0">,</span>
+  <span class="s1">image_size=(img_height</span><span class="s0">, </span><span class="s1">img_width)</span><span class="s0">,</span>
+  <span class="s1">batch_size=batch_size)</span>
+<span class="s3"># val set</span>
+<span class="s1">val_ds = tf.keras.utils.image_dataset_from_directory(</span>
+  <span class="s1">data_dir</span><span class="s0">,</span>
+  <span class="s1">validation_split=</span><span class="s4">0.2</span><span class="s0">,</span>
+  <span class="s1">subset=</span><span class="s2">&quot;validation&quot;</span><span class="s0">,</span>
+  <span class="s1">seed=</span><span class="s4">123</span><span class="s0">,</span>
+  <span class="s1">image_size=(img_height</span><span class="s0">, </span><span class="s1">img_width)</span><span class="s0">,</span>
+  <span class="s1">batch_size=batch_size)</span>
+<span class="s3"># class names</span>
+<span class="s1">class_names = train_ds.class_names</span>
+<span class="s1">print(class_names)</span>
+
+
+<span class="s0">for </span><span class="s1">image_batch</span><span class="s0">, </span><span class="s1">labels_batch </span><span class="s0">in </span><span class="s1">train_ds:</span>
+  <span class="s1">print(image_batch.shape)</span>
+  <span class="s1">print(labels_batch.shape)</span>
+  <span class="s0">break</span>
+
+
+<span class="s0">for </span><span class="s1">image</span><span class="s0">, </span><span class="s1">label </span><span class="s0">in </span><span class="s1">train_ds.take(</span><span class="s4">5</span><span class="s1">):</span>
+    <span class="s1">imageShape = image.numpy().shape</span>
+    <span class="s1">label = label.numpy()</span>
+    <span class="s1">labelName = class_names[np.argmax(label)]</span>
+    <span class="s1">print(</span><span class="s2">'Image Shape: {}, Label: {}, LabelName: {}'</span><span class="s1">.format(imageShape</span><span class="s0">, </span><span class="s1">label</span><span class="s0">, </span><span class="s1">labelName))</span>
+<span class="s3"># amount of classes</span>
+<span class="s1">num_classes = len(class_names)</span>
+<span class="s1">print(</span><span class="s2">&quot;num_classes&quot;</span><span class="s0">, </span><span class="s1">num_classes)</span>
+
+
+
+<span class="s1">data_augmentation = tf.keras.Sequential([</span>
+  <span class="s1">layers.RandomFlip(</span><span class="s2">&quot;horizontal_and_vertical&quot;</span><span class="s1">)</span><span class="s0">,</span>
+  <span class="s1">layers.RandomRotation(</span><span class="s4">0.2</span><span class="s1">)</span><span class="s0">,</span>
+<span class="s1">])</span>
+
+
+<span class="s3"># model = tf.keras.Sequential([</span>
+<span class="s3">#     tf.keras.layers.Rescaling(1./255),</span>
+<span class="s3">#     data_augmentation,</span>
+<span class="s3">#     tf.keras.layers.Dense(784, input_shape=(28, 28, 1)),</span>
+<span class="s3">#     tf.keras.layers.Dense(128, activation='relu'),</span>
+<span class="s3">#     tf.keras.layers.Dense(num_classes, activation='softmax')</span>
+<span class="s3"># ])</span>
+
+
+<span class="s1">model = tf.keras.Sequential([</span>
+  <span class="s1">tf.keras.layers.Rescaling(</span><span class="s4">1.</span><span class="s1">/</span><span class="s4">255</span><span class="s1">)</span><span class="s0">,</span>
+  <span class="s1">data_augmentation</span><span class="s0">,</span>
+  <span class="s1">tf.keras.layers.Conv2D(</span><span class="s4">32</span><span class="s0">, </span><span class="s4">3</span><span class="s0">, </span><span class="s1">activation=</span><span class="s2">'relu'</span><span class="s1">)</span><span class="s0">,</span>
+  <span class="s1">tf.keras.layers.MaxPooling2D()</span><span class="s0">,</span>
+  <span class="s1">tf.keras.layers.Conv2D(</span><span class="s4">32</span><span class="s0">, </span><span class="s4">3</span><span class="s0">, </span><span class="s1">activation=</span><span class="s2">'relu'</span><span class="s1">)</span><span class="s0">,</span>
+  <span class="s1">tf.keras.layers.MaxPooling2D()</span><span class="s0">,</span>
+  <span class="s1">tf.keras.layers.Conv2D(</span><span class="s4">32</span><span class="s0">, </span><span class="s4">3</span><span class="s0">, </span><span class="s1">activation=</span><span class="s2">'relu'</span><span class="s1">)</span><span class="s0">,</span>
+  <span class="s1">tf.keras.layers.MaxPooling2D()</span><span class="s0">,</span>
+  <span class="s1">tf.keras.layers.Flatten()</span><span class="s0">,</span>
+  <span class="s1">tf.keras.layers.Dense(</span><span class="s4">128</span><span class="s0">, </span><span class="s1">activation=</span><span class="s2">'relu'</span><span class="s1">)</span><span class="s0">,</span>
+  <span class="s1">tf.keras.layers.Dense(num_classes)</span>
+<span class="s1">])</span>
+
+<span class="s1">model.compile(</span>
+  <span class="s1">optimizer=</span><span class="s2">'adam'</span><span class="s0">,</span>
+  <span class="s1">loss=tf.losses.SparseCategoricalCrossentropy(from_logits=</span><span class="s0">True</span><span class="s1">)</span><span class="s0">,</span>
+  <span class="s1">metrics=[</span><span class="s2">'accuracy'</span><span class="s1">])</span>
+
+<span class="s3">#</span>
+<span class="s1">model.fit(</span>
+  <span class="s1">train_ds</span><span class="s0">,</span>
+  <span class="s1">validation_data=val_ds</span><span class="s0">,</span>
+  <span class="s1">epochs=</span><span class="s4">3</span>
+<span class="s1">)</span>
+
+<span class="s1">model.summary()     </span><span class="s3"># вывод структуры НС в консоль</span>
+
+<span class="s1">model.summary()     </span><span class="s3"># вывод структуры НС в консоль</span></pre>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<html>
+<head>
+<title>data1.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #808080;}
+.s3 { color: #6a8759;}
+.s4 { color: #6897bb;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+data1.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">PIL</span>
+<span class="s0">import </span><span class="s1">os</span>
+<span class="s0">from </span><span class="s1">PIL </span><span class="s0">import </span><span class="s1">Image</span><span class="s0">, </span><span class="s1">ImageFont</span><span class="s0">, </span><span class="s1">ImageDraw</span>
+
+
+<span class="s0">def </span><span class="s1">get_image(str):</span>
+    <span class="s2"># create an image</span>
+    <span class="s1">im = PIL.Image.new (</span><span class="s3">&quot;1&quot;</span><span class="s0">, </span><span class="s1">size=(</span><span class="s4">28</span><span class="s0">, </span><span class="s4">28</span><span class="s1">)</span><span class="s0">, </span><span class="s1">color=</span><span class="s4">1</span><span class="s1">)</span>
+    <span class="s2"># get a font</span>
+    <span class="s1">font = ImageFont.truetype (</span><span class="s3">&quot;arial.ttf&quot;</span><span class="s0">, </span><span class="s4">25</span><span class="s1">)</span>
+    <span class="s2"># get a drawing context</span>
+    <span class="s1">d = ImageDraw.Draw (im)</span>
+    <span class="s2"># draw multiline text</span>
+    <span class="s1">d.text((</span><span class="s4">14</span><span class="s0">, </span><span class="s4">14</span><span class="s1">)</span><span class="s0">, </span><span class="s1">str</span><span class="s0">, </span><span class="s1">font=font</span><span class="s0">,</span>
+            <span class="s1">anchor=</span><span class="s3">'mm'</span><span class="s0">,</span>
+            <span class="s1">fill=</span><span class="s4">0</span><span class="s1">)</span>
+    <span class="s2"># im.show()</span>
+    <span class="s1">par_dir = </span><span class="s3">r&quot;C:\Users\Admin\Downloads\alphabet&quot;</span>
+    <span class="s1">new_dir = </span><span class="s3">f&quot;</span><span class="s0">{</span><span class="s1">str.lower()</span><span class="s0">}</span><span class="s3">&quot;</span>
+    <span class="s1">path = os.path.join(par_dir</span><span class="s0">, </span><span class="s1">new_dir)</span>
+    <span class="s0">if not </span><span class="s1">os.path.exists(path):</span>
+        <span class="s1">os.makedirs(path)</span>
+        <span class="s1">im.save(path + </span><span class="s3">&quot;</span><span class="s0">\\</span><span class="s3">&quot; </span><span class="s1">+ </span><span class="s3">f&quot;</span><span class="s0">{</span><span class="s1">str.lower()</span><span class="s0">}</span><span class="s3">&quot; </span><span class="s1">+ </span><span class="s3">&quot;1&quot; </span><span class="s1">+ </span><span class="s3">&quot;.png&quot;</span><span class="s1">)</span>
+    <span class="s0">else</span><span class="s1">:</span>
+        <span class="s1">im.save(path + </span><span class="s3">&quot;</span><span class="s0">\\</span><span class="s3">&quot; </span><span class="s1">+ </span><span class="s3">f&quot;</span><span class="s0">{</span><span class="s1">str.lower ()</span><span class="s0">}</span><span class="s3">&quot; </span><span class="s1">+ </span><span class="s3">&quot;2&quot; </span><span class="s1">+ </span><span class="s3">&quot;.png&quot;</span><span class="s1">)</span>
+
+<span class="s1">letters = </span><span class="s3">'АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя'</span>
+<span class="s0">for </span><span class="s1">letter </span><span class="s0">in </span><span class="s1">letters[:len(letters):</span><span class="s4">22</span><span class="s1">]:</span>
+    <span class="s1">get_image(letter)</span>
+<span class="s0">for </span><span class="s1">letter </span><span class="s0">in </span><span class="s1">letters[</span><span class="s4">1</span><span class="s1">:len(letters):</span><span class="s4">22</span><span class="s1">]:</span>
+    <span class="s1">get_image(letter)</span>
+
+
+
+
+
+</pre>
+</body>
+</html>

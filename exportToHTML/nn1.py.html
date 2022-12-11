@@ -1,0 +1,263 @@
+<html>
+<head>
+<title>nn1.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #808080;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #6a8759;}
+.s4 { color: #6897bb;}
+.ls0 { height: 1px; border-width: 0; color: #4d4d4d; background-color:#4d4d4d}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+nn1.py</font>
+</center></td></tr></table>
+<pre><span class="s0"># Code source: dmitryelj@gmail.com</span>
+
+<span class="s2">import </span><span class="s1">os</span>
+<span class="s0"># Force CPU</span>
+<span class="s0"># os.environ[&quot;CUDA_VISIBLE_DEVICES&quot;] = &quot;-1&quot;</span>
+<span class="s0"># Debug messages</span>
+<span class="s0"># 0 = all messages are logged (default behavior)</span>
+<span class="s0"># 1 = INFO messages are not printed</span>
+<span class="s0"># 2 = INFO and WARNING messages are not printed</span>
+<span class="s0"># 3 = INFO, WARNING, and ERROR messages are not printed</span>
+<span class="s1">os.environ[</span><span class="s3">'TF_CPP_MIN_LOG_LEVEL'</span><span class="s1">] = </span><span class="s3">'3'</span>
+
+<span class="s2">import </span><span class="s1">pandas </span><span class="s2">as </span><span class="s1">pd</span>
+<span class="s2">import </span><span class="s1">cv2</span>
+<span class="s2">import </span><span class="s1">imghdr</span>
+<span class="s2">import </span><span class="s1">numpy </span><span class="s2">as </span><span class="s1">np</span>
+<span class="s2">import </span><span class="s1">pathlib</span>
+<span class="s2">from </span><span class="s1">tensorflow </span><span class="s2">import </span><span class="s1">keras</span>
+<span class="s2">from </span><span class="s1">keras.models </span><span class="s2">import </span><span class="s1">Sequential</span>
+<span class="s2">from </span><span class="s1">keras </span><span class="s2">import </span><span class="s1">optimizers</span>
+<span class="s2">from </span><span class="s1">keras.layers </span><span class="s2">import </span><span class="s1">Convolution2D</span><span class="s2">, </span><span class="s1">MaxPooling2D</span><span class="s2">, </span><span class="s1">Dropout</span><span class="s2">, </span><span class="s1">Flatten</span><span class="s2">, </span><span class="s1">Dense</span><span class="s2">, </span><span class="s1">Reshape</span><span class="s2">, </span><span class="s1">LSTM</span><span class="s2">, </span><span class="s1">BatchNormalization</span>
+<span class="s2">from </span><span class="s1">keras.optimizers </span><span class="s2">import </span><span class="s1">SGD</span><span class="s2">, </span><span class="s1">RMSprop</span><span class="s2">, </span><span class="s1">Adam</span>
+<span class="s2">from </span><span class="s1">keras </span><span class="s2">import </span><span class="s1">backend </span><span class="s2">as </span><span class="s1">K</span>
+<span class="s2">from </span><span class="s1">keras.constraints </span><span class="s2">import </span><span class="s1">maxnorm</span>
+<span class="s2">import </span><span class="s1">tensorflow </span><span class="s2">as </span><span class="s1">tf</span>
+<span class="s2">from </span><span class="s1">scipy </span><span class="s2">import </span><span class="s1">io </span><span class="s2">as </span><span class="s1">spio</span>
+<span class="s2">import </span><span class="s1">idx2numpy  </span><span class="s0"># sudo pip3 install idx2numpy</span>
+<span class="s2">from </span><span class="s1">matplotlib </span><span class="s2">import </span><span class="s1">pyplot </span><span class="s2">as </span><span class="s1">plt</span>
+<span class="s2">from </span><span class="s1">typing </span><span class="s2">import </span><span class="s1">*</span>
+<span class="s2">import </span><span class="s1">time</span>
+
+
+<span class="s0"># Dataset:</span>
+<span class="s0"># https://www.nist.gov/node/1298471/emnist-dataset</span>
+<span class="s0"># https://www.itl.nist.gov/iaui/vip/cs_links/EMNIST/gzip.zip</span>
+
+
+<span class="s2">def </span><span class="s1">cnn_print_digit(d):</span>
+    <span class="s1">print(d.shape)</span>
+    <span class="s2">for </span><span class="s1">x </span><span class="s2">in </span><span class="s1">range(</span><span class="s4">28</span><span class="s1">):</span>
+        <span class="s1">s = </span><span class="s3">&quot;&quot;</span>
+        <span class="s2">for </span><span class="s1">y </span><span class="s2">in </span><span class="s1">range(</span><span class="s4">28</span><span class="s1">):</span>
+            <span class="s1">s += </span><span class="s3">&quot;{0:.1f} &quot;</span><span class="s1">.format(d[</span><span class="s4">28</span><span class="s1">*y + x])</span>
+        <span class="s1">print(s)</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">cnn_print_digit_2d(d):</span>
+    <span class="s1">print(d.shape)</span>
+    <span class="s2">for </span><span class="s1">y </span><span class="s2">in </span><span class="s1">range(d.shape[</span><span class="s4">0</span><span class="s1">]):</span>
+        <span class="s1">s = </span><span class="s3">&quot;&quot;</span>
+        <span class="s2">for </span><span class="s1">x </span><span class="s2">in </span><span class="s1">range(d.shape[</span><span class="s4">1</span><span class="s1">]):</span>
+            <span class="s1">s += </span><span class="s3">&quot;{0:.1f} &quot;</span><span class="s1">.format(d[x][y])</span>
+        <span class="s1">print(s)</span>
+
+<span class="s1">emnist_labels = pd.read_csv(</span><span class="s3">r&quot;C:\Users\Admin\PycharmProjects\pythonProject_ocr\cyrillic_label.csv&quot;</span><span class="s1">)</span>
+<span class="s0"># emnist_labels = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122]</span>
+
+<span class="s1">emnist_labels = list(emnist_labels[</span><span class="s3">'labels'</span><span class="s1">])</span>
+
+<span class="s0"># Создаем модель сети.</span><hr class="ls0"><span class="s2">def </span><span class="s1">emnist_model():</span>
+    <span class="s1">model = Sequential()</span>
+    <span class="s1">model.add(Convolution2D(filters=</span><span class="s4">32</span><span class="s2">, </span><span class="s1">kernel_size=(</span><span class="s4">3</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span><span class="s2">, </span><span class="s1">padding=</span><span class="s3">'valid'</span><span class="s2">, </span><span class="s1">input_shape=(</span><span class="s4">28</span><span class="s2">, </span><span class="s4">28</span><span class="s2">, </span><span class="s4">1</span><span class="s1">)</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'relu'</span><span class="s1">))</span>
+    <span class="s1">model.add(Convolution2D(filters=</span><span class="s4">64</span><span class="s2">, </span><span class="s1">kernel_size=(</span><span class="s4">3</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'relu'</span><span class="s1">))</span>
+    <span class="s1">model.add(MaxPooling2D(pool_size=(</span><span class="s4">2</span><span class="s2">, </span><span class="s4">2</span><span class="s1">)))</span>
+    <span class="s1">model.add(Dropout(</span><span class="s4">0.25</span><span class="s1">))</span>
+    <span class="s1">model.add(Flatten())</span>
+    <span class="s1">model.add(Dense(</span><span class="s4">512</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'relu'</span><span class="s1">))</span>
+    <span class="s1">model.add(Dropout(</span><span class="s4">0.5</span><span class="s1">))</span>
+    <span class="s1">model.add(Dense(len(emnist_labels)</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'softmax'</span><span class="s1">))</span>
+    <span class="s1">model.compile(loss=</span><span class="s3">'categorical_crossentropy'</span><span class="s2">, </span><span class="s1">optimizer=</span><span class="s3">'adadelta'</span><span class="s2">, </span><span class="s1">metrics=[</span><span class="s3">'accuracy'</span><span class="s1">])</span>
+    <span class="s2">return </span><span class="s1">model</span>
+
+<span class="s0"># обучению сети</span><hr class="ls0"><span class="s2">def </span><span class="s1">emnist_model2():</span>
+    <span class="s1">model = Sequential()</span>
+    <span class="s0"># In Keras there are two options for padding: same or valid. Same means we pad with the number on the edge and valid means no padding.</span>
+    <span class="s1">model.add(Convolution2D(filters=</span><span class="s4">32</span><span class="s2">, </span><span class="s1">kernel_size=(</span><span class="s4">3</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'relu'</span><span class="s2">, </span><span class="s1">padding=</span><span class="s3">'same'</span><span class="s2">, </span><span class="s1">input_shape=(</span><span class="s4">28</span><span class="s2">, </span><span class="s4">28</span><span class="s2">, </span><span class="s4">1</span><span class="s1">)))</span>
+    <span class="s1">model.add(MaxPooling2D((</span><span class="s4">2</span><span class="s2">, </span><span class="s4">2</span><span class="s1">)))</span>
+    <span class="s1">model.add(Convolution2D(</span><span class="s4">64</span><span class="s2">, </span><span class="s1">(</span><span class="s4">3</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'relu'</span><span class="s2">, </span><span class="s1">padding=</span><span class="s3">'same'</span><span class="s1">))</span>
+    <span class="s1">model.add(MaxPooling2D((</span><span class="s4">2</span><span class="s2">, </span><span class="s4">2</span><span class="s1">)))</span>
+    <span class="s1">model.add(Convolution2D(</span><span class="s4">128</span><span class="s2">, </span><span class="s1">(</span><span class="s4">3</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'relu'</span><span class="s2">, </span><span class="s1">padding=</span><span class="s3">'same'</span><span class="s1">))</span>
+    <span class="s1">model.add(MaxPooling2D((</span><span class="s4">2</span><span class="s2">, </span><span class="s4">2</span><span class="s1">)))</span>
+    <span class="s0"># model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))</span>
+    <span class="s0"># model.add(MaxPooling2D((2, 2)))</span>
+    <span class="s0">## model.add(Dropout(0.25))</span>
+    <span class="s1">model.add(Flatten())</span>
+    <span class="s1">model.add(Dense(</span><span class="s4">512</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'relu'</span><span class="s1">))</span>
+    <span class="s1">model.add(Dropout(</span><span class="s4">0.5</span><span class="s1">))</span>
+    <span class="s1">model.add(Dense(len(emnist_labels)</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'softmax'</span><span class="s1">))</span>
+    <span class="s1">model.compile(loss=</span><span class="s3">'categorical_crossentropy'</span><span class="s2">, </span><span class="s1">optimizer=</span><span class="s3">'adadelta'</span><span class="s2">, </span><span class="s1">metrics=[</span><span class="s3">'accuracy'</span><span class="s1">])</span>
+    <span class="s2">return </span><span class="s1">model</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">emnist_model3():</span>
+    <span class="s1">model = Sequential()</span>
+    <span class="s1">model.add(Convolution2D(filters=</span><span class="s4">32</span><span class="s2">, </span><span class="s1">kernel_size=(</span><span class="s4">3</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span><span class="s2">, </span><span class="s1">padding=</span><span class="s3">'same'</span><span class="s2">, </span><span class="s1">input_shape=(</span><span class="s4">28</span><span class="s2">, </span><span class="s4">28</span><span class="s2">, </span><span class="s4">1</span><span class="s1">)</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'relu'</span><span class="s1">))</span>
+    <span class="s1">model.add(Convolution2D(filters=</span><span class="s4">32</span><span class="s2">, </span><span class="s1">kernel_size=(</span><span class="s4">3</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span><span class="s2">, </span><span class="s1">padding=</span><span class="s3">'same'</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'relu'</span><span class="s1">))</span>
+    <span class="s1">model.add(MaxPooling2D(pool_size=(</span><span class="s4">2</span><span class="s2">, </span><span class="s4">2</span><span class="s1">)))</span>
+    <span class="s1">model.add(Dropout(</span><span class="s4">0.25</span><span class="s1">))</span>
+
+    <span class="s1">model.add(Convolution2D(filters=</span><span class="s4">64</span><span class="s2">, </span><span class="s1">kernel_size=(</span><span class="s4">3</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span><span class="s2">, </span><span class="s1">padding=</span><span class="s3">'same'</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'relu'</span><span class="s1">))</span>
+    <span class="s1">model.add(Convolution2D(filters=</span><span class="s4">64</span><span class="s2">, </span><span class="s1">kernel_size=(</span><span class="s4">3</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span><span class="s2">, </span><span class="s1">padding=</span><span class="s3">'same'</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">'relu'</span><span class="s1">))</span>
+    <span class="s1">model.add(MaxPooling2D(pool_size=(</span><span class="s4">2</span><span class="s2">, </span><span class="s4">2</span><span class="s1">)</span><span class="s2">, </span><span class="s1">strides=(</span><span class="s4">2</span><span class="s2">, </span><span class="s4">2</span><span class="s1">)))</span>
+    <span class="s1">model.add(Dropout(</span><span class="s4">0.25</span><span class="s1">))</span>
+
+    <span class="s1">model.add(Flatten())</span>
+    <span class="s1">model.add(Dense(</span><span class="s4">512</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">&quot;relu&quot;</span><span class="s1">))</span>
+    <span class="s1">model.add(Dropout(</span><span class="s4">0.5</span><span class="s1">))</span>
+    <span class="s1">model.add(Dense(len(emnist_labels)</span><span class="s2">, </span><span class="s1">activation=</span><span class="s3">&quot;softmax&quot;</span><span class="s1">))</span>
+    <span class="s1">model.compile(loss=</span><span class="s3">'categorical_crossentropy'</span><span class="s2">, </span><span class="s1">optimizer=RMSprop(lr=</span><span class="s4">0.001</span><span class="s2">, </span><span class="s1">rho=</span><span class="s4">0.9</span><span class="s2">, </span><span class="s1">epsilon=</span><span class="s4">1e-08</span><span class="s2">, </span><span class="s1">decay=</span><span class="s4">0.0</span><span class="s1">)</span><span class="s2">, </span><span class="s1">metrics=[</span><span class="s3">'accuracy'</span><span class="s1">])</span>
+    <span class="s2">return </span><span class="s1">model</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">emnist_train(model):</span>
+    <span class="s1">t_start = time.time()</span>
+
+    <span class="s1">emnist_path = </span><span class="s3">r'C:\Users\Admin\Downloads\Cyrillic'</span>
+    <span class="s1">X_train = idx2numpy.convert_from_file(emnist_path + </span><span class="s3">'emnist-byclass-train-images-idx3-ubyte'</span><span class="s1">)</span>
+    <span class="s1">y_train = idx2numpy.convert_from_file(emnist_path + </span><span class="s3">'emnist-byclass-train-labels-idx1-ubyte'</span><span class="s1">)</span>
+
+    <span class="s1">X_test = idx2numpy.convert_from_file(emnist_path + </span><span class="s3">'emnist-byclass-test-images-idx3-ubyte'</span><span class="s1">)</span>
+    <span class="s1">y_test = idx2numpy.convert_from_file(emnist_path + </span><span class="s3">'emnist-byclass-test-labels-idx1-ubyte'</span><span class="s1">)</span>
+
+    <span class="s1">X_train = np.reshape(X_train</span><span class="s2">, </span><span class="s1">(X_train.shape[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">, </span><span class="s4">28</span><span class="s2">, </span><span class="s4">28</span><span class="s2">, </span><span class="s4">1</span><span class="s1">))</span>
+    <span class="s1">X_test = np.reshape(X_test</span><span class="s2">, </span><span class="s1">(X_test.shape[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">, </span><span class="s4">28</span><span class="s2">, </span><span class="s4">28</span><span class="s2">, </span><span class="s4">1</span><span class="s1">))</span>
+
+    <span class="s1">print(X_train.shape</span><span class="s2">, </span><span class="s1">y_train.shape</span><span class="s2">, </span><span class="s1">X_test.shape</span><span class="s2">, </span><span class="s1">y_test.shape</span><span class="s2">, </span><span class="s1">len(emnist_labels))</span>
+
+    <span class="s0"># Test:</span>
+    <span class="s1">k = </span><span class="s4">10</span>
+    <span class="s1">X_train = X_train[:X_train.shape[</span><span class="s4">0</span><span class="s1">] // k]</span>
+    <span class="s1">y_train = y_train[:y_train.shape[</span><span class="s4">0</span><span class="s1">] // k]</span>
+    <span class="s1">X_test = X_test[:X_test.shape[</span><span class="s4">0</span><span class="s1">] // k]</span>
+    <span class="s1">y_test = y_test[:y_test.shape[</span><span class="s4">0</span><span class="s1">] // k]</span>
+
+    <span class="s0"># Normalize</span>
+    <span class="s1">X_train = X_train.astype(np.float32)</span>
+    <span class="s1">X_train /= </span><span class="s4">255.0</span>
+    <span class="s1">X_test = X_test.astype(np.float32)</span>
+    <span class="s1">X_test /= </span><span class="s4">255.0</span>
+
+    <span class="s1">x_train_cat = keras.utils.to_categorical(y_train</span><span class="s2">, </span><span class="s1">len(emnist_labels))</span>
+    <span class="s1">y_test_cat = keras.utils.to_categorical(y_test</span><span class="s2">, </span><span class="s1">len(emnist_labels))</span>
+
+    <span class="s0"># Set a learning rate reduction</span>
+    <span class="s1">learning_rate_reduction = keras.callbacks.ReduceLROnPlateau(monitor=</span><span class="s3">'val_accuracy'</span><span class="s2">, </span><span class="s1">patience=</span><span class="s4">3</span><span class="s2">, </span><span class="s1">verbose=</span><span class="s4">1</span><span class="s2">, </span><span class="s1">factor=</span><span class="s4">0.5</span><span class="s2">, </span><span class="s1">min_lr=</span><span class="s4">0.00001</span><span class="s1">)</span>
+
+    <span class="s1">model.fit(X_train</span><span class="s2">, </span><span class="s1">x_train_cat</span><span class="s2">, </span><span class="s1">validation_data=(X_test</span><span class="s2">, </span><span class="s1">y_test_cat)</span><span class="s2">, </span><span class="s1">callbacks=[learning_rate_reduction]</span><span class="s2">, </span><span class="s1">batch_size=</span><span class="s4">64</span><span class="s2">, </span><span class="s1">epochs=</span><span class="s4">30</span><span class="s1">)</span>
+    <span class="s1">print(</span><span class="s3">&quot;Training done, dT:&quot;</span><span class="s2">, </span><span class="s1">time.time() - t_start)</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">emnist_predict(model</span><span class="s2">, </span><span class="s1">image_file):</span>
+    <span class="s1">img = keras.preprocessing.image.load_img(image_file</span><span class="s2">, </span><span class="s1">target_size=(</span><span class="s4">28</span><span class="s2">, </span><span class="s4">28</span><span class="s1">)</span><span class="s2">, </span><span class="s1">color_mode=</span><span class="s3">'grayscale'</span><span class="s1">)</span>
+    <span class="s1">emnist_predict_img(model</span><span class="s2">, </span><span class="s1">img)</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">emnist_predict_img(model</span><span class="s2">, </span><span class="s1">img):</span>
+    <span class="s1">img_arr = np.expand_dims(img</span><span class="s2">, </span><span class="s1">axis=</span><span class="s4">0</span><span class="s1">)</span>
+    <span class="s1">img_arr = </span><span class="s4">1 </span><span class="s1">- img_arr/</span><span class="s4">255.0</span>
+    <span class="s1">img_arr[</span><span class="s4">0</span><span class="s1">] = np.rot90(img_arr[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span>
+    <span class="s1">img_arr[</span><span class="s4">0</span><span class="s1">] = np.fliplr(img_arr[</span><span class="s4">0</span><span class="s1">])</span>
+    <span class="s1">img_arr = img_arr.reshape((</span><span class="s4">1</span><span class="s2">, </span><span class="s4">28</span><span class="s2">, </span><span class="s4">28</span><span class="s2">, </span><span class="s4">1</span><span class="s1">))</span>
+
+    <span class="s1">predict = model.predict([img_arr])</span>
+    <span class="s1">result = np.argmax(predict</span><span class="s2">, </span><span class="s1">axis=</span><span class="s4">1</span><span class="s1">)</span>
+    <span class="s2">return </span><span class="s1">chr(emnist_labels[result[</span><span class="s4">0</span><span class="s1">]])</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">letters_extract(image_file: str</span><span class="s2">, </span><span class="s1">out_size=</span><span class="s4">28</span><span class="s1">):</span>
+    <span class="s1">img = cv2.imread(image_file)</span>
+    <span class="s1">gray = cv2.cvtColor(img</span><span class="s2">, </span><span class="s1">cv2.COLOR_BGR2GRAY)</span>
+    <span class="s1">ret</span><span class="s2">, </span><span class="s1">thresh = cv2.threshold(gray</span><span class="s2">, </span><span class="s4">0</span><span class="s2">, </span><span class="s4">255</span><span class="s2">, </span><span class="s1">cv2.THRESH_BINARY)</span>
+    <span class="s1">img_erode = cv2.erode(thresh</span><span class="s2">, </span><span class="s1">np.ones((</span><span class="s4">3</span><span class="s2">, </span><span class="s4">3</span><span class="s1">)</span><span class="s2">, </span><span class="s1">np.uint8)</span><span class="s2">, </span><span class="s1">iterations=</span><span class="s4">1</span><span class="s1">)</span>
+
+    <span class="s0"># Get contours</span>
+    <span class="s1">contours</span><span class="s2">, </span><span class="s1">hierarchy = cv2.findContours(img_erode</span><span class="s2">, </span><span class="s1">cv2.RETR_TREE</span><span class="s2">, </span><span class="s1">cv2.CHAIN_APPROX_NONE)</span>
+
+    <span class="s1">output = img.copy()</span>
+
+    <span class="s1">letters = []</span>
+    <span class="s2">for </span><span class="s1">idx</span><span class="s2">, </span><span class="s1">contour </span><span class="s2">in </span><span class="s1">enumerate(contours):</span>
+        <span class="s1">(x</span><span class="s2">, </span><span class="s1">y</span><span class="s2">, </span><span class="s1">w</span><span class="s2">, </span><span class="s1">h) = cv2.boundingRect(contour)</span>
+        <span class="s0"># print(&quot;R&quot;, idx, x, y, w, h, cv2.contourArea(contour), hierarchy[0][idx])</span>
+        <span class="s0"># hierarchy[i][0]: the index of the next contour of the same level</span>
+        <span class="s0"># hierarchy[i][1]: the index of the previous contour of the same level</span>
+        <span class="s0"># hierarchy[i][2]: the index of the first child</span>
+        <span class="s0"># hierarchy[i][3]: the index of the parent</span>
+        <span class="s2">if </span><span class="s1">hierarchy[</span><span class="s4">0</span><span class="s1">][idx][</span><span class="s4">3</span><span class="s1">] == </span><span class="s4">0</span><span class="s1">:</span>
+            <span class="s1">cv2.rectangle(output</span><span class="s2">, </span><span class="s1">(x</span><span class="s2">, </span><span class="s1">y)</span><span class="s2">, </span><span class="s1">(x + w</span><span class="s2">, </span><span class="s1">y + h)</span><span class="s2">, </span><span class="s1">(</span><span class="s4">70</span><span class="s2">, </span><span class="s4">0</span><span class="s2">, </span><span class="s4">0</span><span class="s1">)</span><span class="s2">, </span><span class="s4">1</span><span class="s1">)</span>
+            <span class="s1">letter_crop = gray[y:y + h</span><span class="s2">, </span><span class="s1">x:x + w]</span>
+            <span class="s0"># print(letter_crop.shape)</span>
+
+            <span class="s0"># Resize letter canvas to square</span>
+            <span class="s1">size_max = max(w</span><span class="s2">, </span><span class="s1">h)</span>
+            <span class="s1">letter_square = </span><span class="s4">255 </span><span class="s1">* np.ones(shape=[size_max</span><span class="s2">, </span><span class="s1">size_max]</span><span class="s2">, </span><span class="s1">dtype=np.uint8)</span>
+            <span class="s2">if </span><span class="s1">w &gt; h:</span>
+                <span class="s0"># Enlarge image top-bottom</span>
+                <span class="s0"># ------</span>
+                <span class="s0"># ======</span>
+                <span class="s0"># ------</span>
+                <span class="s1">y_pos = size_max//</span><span class="s4">2 </span><span class="s1">- h//</span><span class="s4">2</span>
+                <span class="s1">letter_square[y_pos:y_pos + h</span><span class="s2">, </span><span class="s4">0</span><span class="s1">:w] = letter_crop</span>
+            <span class="s2">elif </span><span class="s1">w &lt; h:</span>
+                <span class="s0"># Enlarge image left-right</span>
+                <span class="s0"># --||--</span>
+                <span class="s1">x_pos = size_max//</span><span class="s4">2 </span><span class="s1">- w//</span><span class="s4">2</span>
+                <span class="s1">letter_square[</span><span class="s4">0</span><span class="s1">:h</span><span class="s2">, </span><span class="s1">x_pos:x_pos + w] = letter_crop</span>
+            <span class="s2">else</span><span class="s1">:</span>
+                <span class="s1">letter_square = letter_crop</span>
+
+            <span class="s0"># Resize letter to 28x28 and add letter and its X-coordinate</span>
+            <span class="s1">letters.append((x</span><span class="s2">, </span><span class="s1">w</span><span class="s2">, </span><span class="s1">cv2.resize(letter_square</span><span class="s2">, </span><span class="s1">(out_size</span><span class="s2">, </span><span class="s1">out_size)</span><span class="s2">, </span><span class="s1">interpolation=cv2.INTER_AREA)))</span>
+
+    <span class="s0"># Sort array in place by X-coordinate</span>
+    <span class="s1">letters.sort(key=</span><span class="s2">lambda </span><span class="s1">x: x[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">, </span><span class="s1">reverse=</span><span class="s2">False</span><span class="s1">)</span>
+
+    <span class="s0"># cv2.imshow(&quot;Input&quot;, img)</span>
+    <span class="s0"># # cv2.imshow(&quot;Gray&quot;, thresh)</span>
+    <span class="s0"># cv2.imshow(&quot;Enlarged&quot;, img_erode)</span>
+    <span class="s0"># cv2.imshow(&quot;Output&quot;, output)</span>
+    <span class="s0"># cv2.imshow(&quot;0&quot;, letters[0][2])</span>
+    <span class="s0"># cv2.imshow(&quot;1&quot;, letters[1][2])</span>
+    <span class="s0"># cv2.imshow(&quot;2&quot;, letters[2][2])</span>
+    <span class="s0"># cv2.imshow(&quot;3&quot;, letters[3][2])</span>
+    <span class="s0"># cv2.imshow(&quot;4&quot;, letters[4][2])</span>
+    <span class="s0"># cv2.waitKey(0)</span>
+    <span class="s2">return </span><span class="s1">letters</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">img_to_str(model: Any</span><span class="s2">, </span><span class="s1">image_file: str):</span>
+    <span class="s1">letters = letters_extract(image_file)</span>
+    <span class="s1">s_out = </span><span class="s3">&quot;&quot;</span>
+    <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(len(letters)):</span>
+        <span class="s1">dn = letters[i+</span><span class="s4">1</span><span class="s1">][</span><span class="s4">0</span><span class="s1">] - letters[i][</span><span class="s4">0</span><span class="s1">] - letters[i][</span><span class="s4">1</span><span class="s1">] </span><span class="s2">if </span><span class="s1">i &lt; len(letters) - </span><span class="s4">1 </span><span class="s2">else </span><span class="s4">0</span>
+        <span class="s1">s_out += emnist_predict_img(model</span><span class="s2">, </span><span class="s1">letters[i][</span><span class="s4">2</span><span class="s1">])</span>
+        <span class="s2">if </span><span class="s1">(dn &gt; letters[i][</span><span class="s4">1</span><span class="s1">]/</span><span class="s4">4</span><span class="s1">):</span>
+            <span class="s1">s_out += </span><span class="s3">' '</span>
+    <span class="s2">return </span><span class="s1">s_out</span>
+
+
+<span class="s2">if </span><span class="s1">__name__ == </span><span class="s3">&quot;__main__&quot;</span><span class="s1">:</span>
+
+    <span class="s0"># model = emnist_model()</span>
+    <span class="s0"># emnist_train(model)</span>
+    <span class="s0"># model.save('emnist_letters.h5')</span>
+
+    <span class="s1">model = keras.models.load_model(</span><span class="s3">'emnist_letters.h5'</span><span class="s1">)</span>
+    <span class="s1">s_out = img_to_str(model</span><span class="s2">, </span><span class="s3">&quot;hello_world.png&quot;</span><span class="s1">)</span>
+    <span class="s1">print(s_out)</span>
+
+</pre>
+</body>
+</html>

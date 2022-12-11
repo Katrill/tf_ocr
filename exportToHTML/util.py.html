@@ -1,0 +1,244 @@
+<html>
+<head>
+<title>util.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #808080;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #6897bb;}
+.s4 { color: #629755; font-style: italic;}
+.s5 { color: #6a8759;}
+.ls0 { height: 1px; border-width: 0; color: #4d4d4d; background-color:#4d4d4d}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+util.py</font>
+</center></td></tr></table>
+<pre><span class="s0"># util.py</span>
+<span class="s2">import </span><span class="s1">warnings</span>
+<span class="s2">import </span><span class="s1">types</span>
+<span class="s2">import </span><span class="s1">collections</span>
+<span class="s2">import </span><span class="s1">itertools</span>
+<span class="s2">from </span><span class="s1">functools </span><span class="s2">import </span><span class="s1">lru_cache</span>
+<span class="s2">from </span><span class="s1">typing </span><span class="s2">import </span><span class="s1">List</span><span class="s2">, </span><span class="s1">Union</span><span class="s2">, </span><span class="s1">Iterable</span>
+
+<span class="s1">_bslash = chr(</span><span class="s3">92</span><span class="s1">)</span>
+
+
+<span class="s2">class </span><span class="s1">__config_flags:</span>
+    <span class="s4">&quot;&quot;&quot;Internal class for defining compatibility and debugging flags&quot;&quot;&quot;</span>
+
+    <span class="s1">_all_names: List[str] = []</span>
+    <span class="s1">_fixed_names: List[str] = []</span>
+    <span class="s1">_type_desc = </span><span class="s5">&quot;configuration&quot;</span>
+
+    <span class="s1">@classmethod</span>
+    <span class="s2">def </span><span class="s1">_set(cls</span><span class="s2">, </span><span class="s1">dname</span><span class="s2">, </span><span class="s1">value):</span>
+        <span class="s2">if </span><span class="s1">dname </span><span class="s2">in </span><span class="s1">cls._fixed_names:</span>
+            <span class="s1">warnings.warn(</span>
+                <span class="s5">&quot;{}.{} {} is {} and cannot be overridden&quot;</span><span class="s1">.format(</span>
+                    <span class="s1">cls.__name__</span><span class="s2">,</span>
+                    <span class="s1">dname</span><span class="s2">,</span>
+                    <span class="s1">cls._type_desc</span><span class="s2">,</span>
+                    <span class="s1">str(getattr(cls</span><span class="s2">, </span><span class="s1">dname)).upper()</span><span class="s2">,</span>
+                <span class="s1">)</span>
+            <span class="s1">)</span>
+            <span class="s2">return</span>
+        <span class="s2">if </span><span class="s1">dname </span><span class="s2">in </span><span class="s1">cls._all_names:</span>
+            <span class="s1">setattr(cls</span><span class="s2">, </span><span class="s1">dname</span><span class="s2">, </span><span class="s1">value)</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s2">raise </span><span class="s1">ValueError(</span><span class="s5">&quot;no such {} {!r}&quot;</span><span class="s1">.format(cls._type_desc</span><span class="s2">, </span><span class="s1">dname))</span>
+
+    <span class="s1">enable = classmethod(</span><span class="s2">lambda </span><span class="s1">cls</span><span class="s2">, </span><span class="s1">name: cls._set(name</span><span class="s2">, True</span><span class="s1">))</span>
+    <span class="s1">disable = classmethod(</span><span class="s2">lambda </span><span class="s1">cls</span><span class="s2">, </span><span class="s1">name: cls._set(name</span><span class="s2">, False</span><span class="s1">))</span>
+
+<hr class="ls0"><span class="s1">@lru_cache(maxsize=</span><span class="s3">128</span><span class="s1">)</span>
+<span class="s2">def </span><span class="s1">col(loc: int</span><span class="s2">, </span><span class="s1">strg: str) -&gt; int:</span>
+    <span class="s4">&quot;&quot;&quot; 
+    Returns current column within a string, counting newlines as line separators. 
+    The first column is number 1. 
+ 
+    Note: the default parsing behavior is to expand tabs in the input string 
+    before starting the parsing process.  See 
+    :class:`ParserElement.parseString` for more 
+    information on parsing strings containing ``&lt;TAB&gt;`` s, and suggested 
+    methods to maintain a consistent view of the parsed string, the parse 
+    location, and line and column positions within the parsed string. 
+    &quot;&quot;&quot;</span>
+    <span class="s1">s = strg</span>
+    <span class="s2">return </span><span class="s3">1 </span><span class="s2">if </span><span class="s3">0 </span><span class="s1">&lt; loc &lt; len(s) </span><span class="s2">and </span><span class="s1">s[loc - </span><span class="s3">1</span><span class="s1">] == </span><span class="s5">&quot;</span><span class="s2">\n</span><span class="s5">&quot; </span><span class="s2">else </span><span class="s1">loc - s.rfind(</span><span class="s5">&quot;</span><span class="s2">\n</span><span class="s5">&quot;</span><span class="s2">, </span><span class="s3">0</span><span class="s2">, </span><span class="s1">loc)</span>
+
+<hr class="ls0"><span class="s1">@lru_cache(maxsize=</span><span class="s3">128</span><span class="s1">)</span>
+<span class="s2">def </span><span class="s1">lineno(loc: int</span><span class="s2">, </span><span class="s1">strg: str) -&gt; int:</span>
+    <span class="s4">&quot;&quot;&quot;Returns current line number within a string, counting newlines as line separators. 
+    The first line is number 1. 
+ 
+    Note - the default parsing behavior is to expand tabs in the input string 
+    before starting the parsing process.  See :class:`ParserElement.parseString` 
+    for more information on parsing strings containing ``&lt;TAB&gt;`` s, and 
+    suggested methods to maintain a consistent view of the parsed string, the 
+    parse location, and line and column positions within the parsed string. 
+    &quot;&quot;&quot;</span>
+    <span class="s2">return </span><span class="s1">strg.count(</span><span class="s5">&quot;</span><span class="s2">\n</span><span class="s5">&quot;</span><span class="s2">, </span><span class="s3">0</span><span class="s2">, </span><span class="s1">loc) + </span><span class="s3">1</span>
+
+<hr class="ls0"><span class="s1">@lru_cache(maxsize=</span><span class="s3">128</span><span class="s1">)</span>
+<span class="s2">def </span><span class="s1">line(loc: int</span><span class="s2">, </span><span class="s1">strg: str) -&gt; str:</span>
+    <span class="s4">&quot;&quot;&quot; 
+    Returns the line of text containing loc within a string, counting newlines as line separators. 
+    &quot;&quot;&quot;</span>
+    <span class="s1">last_cr = strg.rfind(</span><span class="s5">&quot;</span><span class="s2">\n</span><span class="s5">&quot;</span><span class="s2">, </span><span class="s3">0</span><span class="s2">, </span><span class="s1">loc)</span>
+    <span class="s1">next_cr = strg.find(</span><span class="s5">&quot;</span><span class="s2">\n</span><span class="s5">&quot;</span><span class="s2">, </span><span class="s1">loc)</span>
+    <span class="s2">return </span><span class="s1">strg[last_cr + </span><span class="s3">1 </span><span class="s1">: next_cr] </span><span class="s2">if </span><span class="s1">next_cr &gt;= </span><span class="s3">0 </span><span class="s2">else </span><span class="s1">strg[last_cr + </span><span class="s3">1 </span><span class="s1">:]</span>
+
+<hr class="ls0"><span class="s2">class </span><span class="s1">_UnboundedCache:</span>
+    <span class="s2">def </span><span class="s1">__init__(self):</span>
+        <span class="s1">cache = {}</span>
+        <span class="s1">cache_get = cache.get</span>
+        <span class="s1">self.not_in_cache = not_in_cache = object()</span>
+
+        <span class="s2">def </span><span class="s1">get(_</span><span class="s2">, </span><span class="s1">key):</span>
+            <span class="s2">return </span><span class="s1">cache_get(key</span><span class="s2">, </span><span class="s1">not_in_cache)</span>
+
+        <span class="s2">def </span><span class="s1">set_(_</span><span class="s2">, </span><span class="s1">key</span><span class="s2">, </span><span class="s1">value):</span>
+            <span class="s1">cache[key] = value</span>
+
+        <span class="s2">def </span><span class="s1">clear(_):</span>
+            <span class="s1">cache.clear()</span>
+
+        <span class="s1">self.size = </span><span class="s2">None</span>
+        <span class="s1">self.get = types.MethodType(get</span><span class="s2">, </span><span class="s1">self)</span>
+        <span class="s1">self.set = types.MethodType(set_</span><span class="s2">, </span><span class="s1">self)</span>
+        <span class="s1">self.clear = types.MethodType(clear</span><span class="s2">, </span><span class="s1">self)</span>
+
+<hr class="ls0"><span class="s2">class </span><span class="s1">_FifoCache:</span>
+    <span class="s2">def </span><span class="s1">__init__(self</span><span class="s2">, </span><span class="s1">size):</span>
+        <span class="s1">self.not_in_cache = not_in_cache = object()</span>
+        <span class="s1">cache = collections.OrderedDict()</span>
+        <span class="s1">cache_get = cache.get</span>
+
+        <span class="s2">def </span><span class="s1">get(_</span><span class="s2">, </span><span class="s1">key):</span>
+            <span class="s2">return </span><span class="s1">cache_get(key</span><span class="s2">, </span><span class="s1">not_in_cache)</span>
+
+        <span class="s2">def </span><span class="s1">set_(_</span><span class="s2">, </span><span class="s1">key</span><span class="s2">, </span><span class="s1">value):</span>
+            <span class="s1">cache[key] = value</span>
+            <span class="s2">while </span><span class="s1">len(cache) &gt; size:</span>
+                <span class="s1">cache.popitem(last=</span><span class="s2">False</span><span class="s1">)</span>
+
+        <span class="s2">def </span><span class="s1">clear(_):</span>
+            <span class="s1">cache.clear()</span>
+
+        <span class="s1">self.size = size</span>
+        <span class="s1">self.get = types.MethodType(get</span><span class="s2">, </span><span class="s1">self)</span>
+        <span class="s1">self.set = types.MethodType(set_</span><span class="s2">, </span><span class="s1">self)</span>
+        <span class="s1">self.clear = types.MethodType(clear</span><span class="s2">, </span><span class="s1">self)</span>
+
+<hr class="ls0"><span class="s2">class </span><span class="s1">LRUMemo:</span>
+    <span class="s4">&quot;&quot;&quot; 
+    A memoizing mapping that retains `capacity` deleted items 
+ 
+    The memo tracks retained items by their access order; once `capacity` items 
+    are retained, the least recently used item is discarded. 
+    &quot;&quot;&quot;</span>
+
+    <span class="s2">def </span><span class="s1">__init__(self</span><span class="s2">, </span><span class="s1">capacity):</span>
+        <span class="s1">self._capacity = capacity</span>
+        <span class="s1">self._active = {}</span>
+        <span class="s1">self._memory = collections.OrderedDict()</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">__getitem__(self</span><span class="s2">, </span><span class="s1">key):</span>
+        <span class="s2">try</span><span class="s1">:</span>
+            <span class="s2">return </span><span class="s1">self._active[key]</span>
+        <span class="s2">except </span><span class="s1">KeyError:</span>
+            <span class="s1">self._memory.move_to_end(key)</span>
+            <span class="s2">return </span><span class="s1">self._memory[key]</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">__setitem__(self</span><span class="s2">, </span><span class="s1">key</span><span class="s2">, </span><span class="s1">value):</span>
+        <span class="s1">self._memory.pop(key</span><span class="s2">, None</span><span class="s1">)</span>
+        <span class="s1">self._active[key] = value</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">__delitem__(self</span><span class="s2">, </span><span class="s1">key):</span>
+        <span class="s2">try</span><span class="s1">:</span>
+            <span class="s1">value = self._active.pop(key)</span>
+        <span class="s2">except </span><span class="s1">KeyError:</span>
+            <span class="s2">pass</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s2">while </span><span class="s1">len(self._memory) &gt;= self._capacity:</span>
+                <span class="s1">self._memory.popitem(last=</span><span class="s2">False</span><span class="s1">)</span>
+            <span class="s1">self._memory[key] = value</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">clear(self):</span>
+        <span class="s1">self._active.clear()</span>
+        <span class="s1">self._memory.clear()</span>
+
+<hr class="ls0"><span class="s2">class </span><span class="s1">UnboundedMemo(dict):</span>
+    <span class="s4">&quot;&quot;&quot; 
+    A memoizing mapping that retains all deleted items 
+    &quot;&quot;&quot;</span>
+
+    <span class="s2">def </span><span class="s1">__delitem__(self</span><span class="s2">, </span><span class="s1">key):</span>
+        <span class="s2">pass</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">_escape_regex_range_chars(s: str) -&gt; str:</span>
+    <span class="s0"># escape these chars: ^-[]</span>
+    <span class="s2">for </span><span class="s1">c </span><span class="s2">in </span><span class="s5">r&quot;\^-[]&quot;</span><span class="s1">:</span>
+        <span class="s1">s = s.replace(c</span><span class="s2">, </span><span class="s1">_bslash + c)</span>
+    <span class="s1">s = s.replace(</span><span class="s5">&quot;</span><span class="s2">\n</span><span class="s5">&quot;</span><span class="s2">, </span><span class="s5">r&quot;\n&quot;</span><span class="s1">)</span>
+    <span class="s1">s = s.replace(</span><span class="s5">&quot;</span><span class="s2">\t</span><span class="s5">&quot;</span><span class="s2">, </span><span class="s5">r&quot;\t&quot;</span><span class="s1">)</span>
+    <span class="s2">return </span><span class="s1">str(s)</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">_collapse_string_to_ranges(</span>
+    <span class="s1">s: Union[str</span><span class="s2">, </span><span class="s1">Iterable[str]]</span><span class="s2">, </span><span class="s1">re_escape: bool = </span><span class="s2">True</span>
+<span class="s1">) -&gt; str:</span>
+    <span class="s2">def </span><span class="s1">is_consecutive(c):</span>
+        <span class="s1">c_int = ord(c)</span>
+        <span class="s1">is_consecutive.prev</span><span class="s2">, </span><span class="s1">prev = c_int</span><span class="s2">, </span><span class="s1">is_consecutive.prev</span>
+        <span class="s2">if </span><span class="s1">c_int - prev &gt; </span><span class="s3">1</span><span class="s1">:</span>
+            <span class="s1">is_consecutive.value = next(is_consecutive.counter)</span>
+        <span class="s2">return </span><span class="s1">is_consecutive.value</span>
+
+    <span class="s1">is_consecutive.prev = </span><span class="s3">0</span>
+    <span class="s1">is_consecutive.counter = itertools.count()</span>
+    <span class="s1">is_consecutive.value = -</span><span class="s3">1</span>
+
+    <span class="s2">def </span><span class="s1">escape_re_range_char(c):</span>
+        <span class="s2">return </span><span class="s5">&quot;</span><span class="s2">\\</span><span class="s5">&quot; </span><span class="s1">+ c </span><span class="s2">if </span><span class="s1">c </span><span class="s2">in </span><span class="s5">r&quot;\^-][&quot; </span><span class="s2">else </span><span class="s1">c</span>
+
+    <span class="s2">def </span><span class="s1">no_escape_re_range_char(c):</span>
+        <span class="s2">return </span><span class="s1">c</span>
+
+    <span class="s2">if not </span><span class="s1">re_escape:</span>
+        <span class="s1">escape_re_range_char = no_escape_re_range_char</span>
+
+    <span class="s1">ret = []</span>
+    <span class="s1">s = </span><span class="s5">&quot;&quot;</span><span class="s1">.join(sorted(set(s)))</span>
+    <span class="s2">if </span><span class="s1">len(s) &gt; </span><span class="s3">3</span><span class="s1">:</span>
+        <span class="s2">for </span><span class="s1">_</span><span class="s2">, </span><span class="s1">chars </span><span class="s2">in </span><span class="s1">itertools.groupby(s</span><span class="s2">, </span><span class="s1">key=is_consecutive):</span>
+            <span class="s1">first = last = next(chars)</span>
+            <span class="s1">last = collections.deque(</span>
+                <span class="s1">itertools.chain(iter([last])</span><span class="s2">, </span><span class="s1">chars)</span><span class="s2">, </span><span class="s1">maxlen=</span><span class="s3">1</span>
+            <span class="s1">).pop()</span>
+            <span class="s2">if </span><span class="s1">first == last:</span>
+                <span class="s1">ret.append(escape_re_range_char(first))</span>
+            <span class="s2">else</span><span class="s1">:</span>
+                <span class="s1">sep = </span><span class="s5">&quot;&quot; </span><span class="s2">if </span><span class="s1">ord(last) == ord(first) + </span><span class="s3">1 </span><span class="s2">else </span><span class="s5">&quot;-&quot;</span>
+                <span class="s1">ret.append(</span>
+                    <span class="s5">&quot;{}{}{}&quot;</span><span class="s1">.format(</span>
+                        <span class="s1">escape_re_range_char(first)</span><span class="s2">, </span><span class="s1">sep</span><span class="s2">, </span><span class="s1">escape_re_range_char(last)</span>
+                    <span class="s1">)</span>
+                <span class="s1">)</span>
+    <span class="s2">else</span><span class="s1">:</span>
+        <span class="s1">ret = [escape_re_range_char(c) </span><span class="s2">for </span><span class="s1">c </span><span class="s2">in </span><span class="s1">s]</span>
+
+    <span class="s2">return </span><span class="s5">&quot;&quot;</span><span class="s1">.join(ret)</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">_flatten(ll: list) -&gt; list:</span>
+    <span class="s1">ret = []</span>
+    <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">ll:</span>
+        <span class="s2">if </span><span class="s1">isinstance(i</span><span class="s2">, </span><span class="s1">list):</span>
+            <span class="s1">ret.extend(_flatten(i))</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">ret.append(i)</span>
+    <span class="s2">return </span><span class="s1">ret</span>
+</pre>
+</body>
+</html>

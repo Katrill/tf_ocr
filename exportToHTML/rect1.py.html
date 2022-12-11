@@ -1,0 +1,58 @@
+<html>
+<head>
+<title>rect1.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+.s3 { color: #6897bb;}
+.s4 { color: #808080;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+rect1.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">cv2</span>
+<span class="s0">import </span><span class="s1">numpy </span><span class="s0">as </span><span class="s1">np</span>
+<span class="s0">import </span><span class="s1">argparse</span>
+<span class="s0">import </span><span class="s1">imutils</span>
+<span class="s0">import </span><span class="s1">pytesseract</span>
+<span class="s0">import </span><span class="s1">sys</span>
+<span class="s1">pytesseract.pytesseract.tesseract_cmd = </span><span class="s2">r'C:\Program Files\Tesseract-OCR\tesseract.exe'</span>
+
+
+<span class="s1">img = cv2.imread(</span><span class="s2">'2.jpeg'</span><span class="s1">)</span>
+<span class="s1">gray = cv2.cvtColor(img</span><span class="s0">, </span><span class="s1">cv2.COLOR_BGR2GRAY)</span>
+<span class="s1">ret</span><span class="s0">,</span><span class="s1">thresh = cv2.threshold(gray</span><span class="s0">,</span><span class="s3">150</span><span class="s0">,</span><span class="s3">255</span><span class="s0">,</span><span class="s3">0</span><span class="s1">)</span>
+<span class="s1">contours</span><span class="s0">,</span><span class="s1">hierarchy = cv2.findContours(thresh</span><span class="s0">, </span><span class="s3">1</span><span class="s0">, </span><span class="s3">2</span><span class="s1">)</span>
+<span class="s4"># contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)</span>
+<span class="s1">print(</span><span class="s2">&quot;Number of contours detected:&quot;</span><span class="s0">, </span><span class="s1">len(contours))</span>
+<span class="s4">#approx = cv2.approxPolyDP(cnt,epsilon,True)</span>
+<span class="s1">kernel = cv2.getStructuringElement(cv2.MORPH_RECT</span><span class="s0">, </span><span class="s1">(</span><span class="s3">51</span><span class="s0">, </span><span class="s3">11</span><span class="s1">))</span>
+<span class="s1">blackhat = cv2.morphologyEx(thresh</span><span class="s0">, </span><span class="s1">cv2.MORPH_BLACKHAT</span><span class="s0">, </span><span class="s1">kernel)</span>
+<span class="s1">contours</span><span class="s0">, </span><span class="s1">_ = cv2.findContours(blackhat</span><span class="s0">, </span><span class="s1">cv2.RETR_TREE</span><span class="s0">, </span><span class="s1">cv2.CHAIN_APPROX_SIMPLE)</span>
+<span class="s1">print(pytesseract.image_to_data(gray</span><span class="s0">, </span><span class="s1">lang=</span><span class="s2">&quot;eng+rus&quot;</span><span class="s0">, </span><span class="s1">config=</span><span class="s2">'--psm 3'</span><span class="s1">))</span>
+<span class="s4"># for cnt in contours:</span>
+<span class="s4">#    x1,y1 = cnt[0][0]</span>
+<span class="s4">#    approx = cv2.approxPolyDP(cnt, 0.01*cv2.arcLength(cnt, True), True)</span>
+<span class="s4">#    img = cv2.drawContours(img, [cnt], -1, (0, 255, 255), 3)</span>
+   <span class="s4"># if len(approx) == 4:</span>
+   <span class="s4">#    x, y, w, h = cv2.boundingRect(cnt)</span>
+      <span class="s4"># img = cv2.drawContours (img, [cnt], -1, (0, 255, 255), 3)</span>
+      <span class="s4"># ratio = float(w)/h</span>
+      <span class="s4"># if ratio &gt;= 0.9 and ratio &lt;= 1.1:</span>
+      <span class="s4">#    img = cv2.drawContours(img, [cnt], -1, (0,255,255), 3)</span>
+      <span class="s4">#    cv2.putText(img, 'Square', (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)</span>
+      <span class="s4"># else:</span>
+      <span class="s4">#    cv2.putText(img, 'Rectangle', (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)</span>
+      <span class="s4">#    img = cv2.drawContours(img, [cnt], -1, (0,255,0), 3)</span>
+
+
+<span class="s1">cv2.imshow(</span><span class="s2">&quot;thresh&quot;</span><span class="s0">, </span><span class="s1">blackhat)</span>
+<span class="s1">cv2.waitKey(</span><span class="s3">0</span><span class="s1">)</span></pre>
+</body>
+</html>

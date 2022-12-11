@@ -1,0 +1,611 @@
+<html>
+<head>
+<title>test_api.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6897bb;}
+.s3 { color: #808080;}
+.s4 { color: #a5c261;}
+.s5 { color: #6a8759;}
+.s6 { color: #629755; font-style: italic;}
+.ls0 { height: 1px; border-width: 0; color: #4d4d4d; background-color:#4d4d4d}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+test_api.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">sys</span>
+
+<span class="s0">import </span><span class="s1">numpy </span><span class="s0">as </span><span class="s1">np</span>
+<span class="s0">from </span><span class="s1">numpy.core._rational_tests </span><span class="s0">import </span><span class="s1">rational</span>
+<span class="s0">import </span><span class="s1">pytest</span>
+<span class="s0">from </span><span class="s1">numpy.testing </span><span class="s0">import </span><span class="s1">(</span>
+     <span class="s1">assert_</span><span class="s0">, </span><span class="s1">assert_equal</span><span class="s0">, </span><span class="s1">assert_array_equal</span><span class="s0">, </span><span class="s1">assert_raises</span><span class="s0">, </span><span class="s1">assert_warns</span><span class="s0">,</span>
+     <span class="s1">HAS_REFCOUNT</span>
+    <span class="s1">)</span>
+
+
+<span class="s0">def </span><span class="s1">test_array_array():</span>
+    <span class="s1">tobj = type(object)</span>
+    <span class="s1">ones11 = np.ones((</span><span class="s2">1</span><span class="s0">, </span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">np.float64)</span>
+    <span class="s1">tndarray = type(ones11)</span>
+    <span class="s3"># Test is_ndarray</span>
+    <span class="s1">assert_equal(np.array(ones11</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">, </span><span class="s1">ones11)</span>
+    <span class="s0">if </span><span class="s1">HAS_REFCOUNT:</span>
+        <span class="s1">old_refcount = sys.getrefcount(tndarray)</span>
+        <span class="s1">np.array(ones11)</span>
+        <span class="s1">assert_equal(old_refcount</span><span class="s0">, </span><span class="s1">sys.getrefcount(tndarray))</span>
+
+    <span class="s3"># test None</span>
+    <span class="s1">assert_equal(np.array(</span><span class="s0">None, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.array(np.nan</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s0">if </span><span class="s1">HAS_REFCOUNT:</span>
+        <span class="s1">old_refcount = sys.getrefcount(tobj)</span>
+        <span class="s1">np.array(</span><span class="s0">None, </span><span class="s1">dtype=np.float64)</span>
+        <span class="s1">assert_equal(old_refcount</span><span class="s0">, </span><span class="s1">sys.getrefcount(tobj))</span>
+
+    <span class="s3"># test scalar</span>
+    <span class="s1">assert_equal(np.array(</span><span class="s2">1.0</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.ones(()</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s0">if </span><span class="s1">HAS_REFCOUNT:</span>
+        <span class="s1">old_refcount = sys.getrefcount(np.float64)</span>
+        <span class="s1">np.array(np.array(</span><span class="s2">1.0</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span>
+        <span class="s1">assert_equal(old_refcount</span><span class="s0">, </span><span class="s1">sys.getrefcount(np.float64))</span>
+
+    <span class="s3"># test string</span>
+    <span class="s1">S2 = np.dtype((bytes</span><span class="s0">, </span><span class="s2">2</span><span class="s1">))</span>
+    <span class="s1">S3 = np.dtype((bytes</span><span class="s0">, </span><span class="s2">3</span><span class="s1">))</span>
+    <span class="s1">S5 = np.dtype((bytes</span><span class="s0">, </span><span class="s2">5</span><span class="s1">))</span>
+    <span class="s1">assert_equal(np.array(</span><span class="s4">b&quot;1.0&quot;</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.ones(()</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array(</span><span class="s4">b&quot;1.0&quot;</span><span class="s1">).dtype</span><span class="s0">, </span><span class="s1">S3)</span>
+    <span class="s1">assert_equal(np.array(</span><span class="s4">b&quot;1.0&quot;</span><span class="s0">, </span><span class="s1">dtype=bytes).dtype</span><span class="s0">, </span><span class="s1">S3)</span>
+    <span class="s1">assert_equal(np.array(</span><span class="s4">b&quot;1.0&quot;</span><span class="s0">, </span><span class="s1">dtype=S2)</span><span class="s0">, </span><span class="s1">np.array(</span><span class="s4">b&quot;1.&quot;</span><span class="s1">))</span>
+    <span class="s1">assert_equal(np.array(</span><span class="s4">b&quot;1&quot;</span><span class="s0">, </span><span class="s1">dtype=S5)</span><span class="s0">, </span><span class="s1">np.ones(()</span><span class="s0">, </span><span class="s1">dtype=S5))</span>
+
+    <span class="s3"># test string</span>
+    <span class="s1">U2 = np.dtype((str</span><span class="s0">, </span><span class="s2">2</span><span class="s1">))</span>
+    <span class="s1">U3 = np.dtype((str</span><span class="s0">, </span><span class="s2">3</span><span class="s1">))</span>
+    <span class="s1">U5 = np.dtype((str</span><span class="s0">, </span><span class="s2">5</span><span class="s1">))</span>
+    <span class="s1">assert_equal(np.array(</span><span class="s5">&quot;1.0&quot;</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.ones(()</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array(</span><span class="s5">&quot;1.0&quot;</span><span class="s1">).dtype</span><span class="s0">, </span><span class="s1">U3)</span>
+    <span class="s1">assert_equal(np.array(</span><span class="s5">&quot;1.0&quot;</span><span class="s0">, </span><span class="s1">dtype=str).dtype</span><span class="s0">, </span><span class="s1">U3)</span>
+    <span class="s1">assert_equal(np.array(</span><span class="s5">&quot;1.0&quot;</span><span class="s0">, </span><span class="s1">dtype=U2)</span><span class="s0">, </span><span class="s1">np.array(str(</span><span class="s5">&quot;1.&quot;</span><span class="s1">)))</span>
+    <span class="s1">assert_equal(np.array(</span><span class="s5">&quot;1&quot;</span><span class="s0">, </span><span class="s1">dtype=U5)</span><span class="s0">, </span><span class="s1">np.ones(()</span><span class="s0">, </span><span class="s1">dtype=U5))</span>
+
+    <span class="s1">builtins = getattr(__builtins__</span><span class="s0">, </span><span class="s5">'__dict__'</span><span class="s0">, </span><span class="s1">__builtins__)</span>
+    <span class="s1">assert_(hasattr(builtins</span><span class="s0">, </span><span class="s5">'get'</span><span class="s1">))</span>
+
+    <span class="s3"># test memoryview</span>
+    <span class="s1">dat = np.array(memoryview(</span><span class="s4">b'1.0'</span><span class="s1">)</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span>
+    <span class="s1">assert_equal(dat</span><span class="s0">, </span><span class="s1">[</span><span class="s2">49.0</span><span class="s0">, </span><span class="s2">46.0</span><span class="s0">, </span><span class="s2">48.0</span><span class="s1">])</span>
+    <span class="s1">assert_(dat.dtype.type </span><span class="s0">is </span><span class="s1">np.float64)</span>
+
+    <span class="s1">dat = np.array(memoryview(</span><span class="s4">b'1.0'</span><span class="s1">))</span>
+    <span class="s1">assert_equal(dat</span><span class="s0">, </span><span class="s1">[</span><span class="s2">49</span><span class="s0">, </span><span class="s2">46</span><span class="s0">, </span><span class="s2">48</span><span class="s1">])</span>
+    <span class="s1">assert_(dat.dtype.type </span><span class="s0">is </span><span class="s1">np.uint8)</span>
+
+    <span class="s3"># test array interface</span>
+    <span class="s1">a = np.array(</span><span class="s2">100.0</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span>
+    <span class="s1">o = type(</span><span class="s5">&quot;o&quot;</span><span class="s0">, </span><span class="s1">(object</span><span class="s0">,</span><span class="s1">)</span><span class="s0">,</span>
+             <span class="s1">dict(__array_interface__=a.__array_interface__))</span>
+    <span class="s1">assert_equal(np.array(o</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">, </span><span class="s1">a)</span>
+
+    <span class="s3"># test array_struct interface</span>
+    <span class="s1">a = np.array([(</span><span class="s2">1</span><span class="s0">, </span><span class="s2">4.0</span><span class="s0">, </span><span class="s5">'Hello'</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">2</span><span class="s0">, </span><span class="s2">6.0</span><span class="s0">, </span><span class="s5">'World'</span><span class="s1">)]</span><span class="s0">,</span>
+                 <span class="s1">dtype=[(</span><span class="s5">'f0'</span><span class="s0">, </span><span class="s1">int)</span><span class="s0">, </span><span class="s1">(</span><span class="s5">'f1'</span><span class="s0">, </span><span class="s1">float)</span><span class="s0">, </span><span class="s1">(</span><span class="s5">'f2'</span><span class="s0">, </span><span class="s1">str)])</span>
+    <span class="s1">o = type(</span><span class="s5">&quot;o&quot;</span><span class="s0">, </span><span class="s1">(object</span><span class="s0">,</span><span class="s1">)</span><span class="s0">,</span>
+             <span class="s1">dict(__array_struct__=a.__array_struct__))</span>
+    <span class="s3">## wasn't what I expected... is np.array(o) supposed to equal a ?</span>
+    <span class="s3">## instead we get a array([...], dtype=&quot;&gt;V18&quot;)</span>
+    <span class="s1">assert_equal(bytes(np.array(o).data)</span><span class="s0">, </span><span class="s1">bytes(a.data))</span>
+
+    <span class="s3"># test array</span>
+    <span class="s1">o = type(</span><span class="s5">&quot;o&quot;</span><span class="s0">, </span><span class="s1">(object</span><span class="s0">,</span><span class="s1">)</span><span class="s0">,</span>
+             <span class="s1">dict(__array__=</span><span class="s0">lambda </span><span class="s1">*x: np.array(</span><span class="s2">100.0</span><span class="s0">, </span><span class="s1">dtype=np.float64)))()</span>
+    <span class="s1">assert_equal(np.array(o</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">, </span><span class="s1">np.array(</span><span class="s2">100.0</span><span class="s0">, </span><span class="s1">np.float64))</span>
+
+    <span class="s3"># test recursion</span>
+    <span class="s1">nested = </span><span class="s2">1.5</span>
+    <span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range(np.MAXDIMS):</span>
+        <span class="s1">nested = [nested]</span>
+
+    <span class="s3"># no error</span>
+    <span class="s1">np.array(nested)</span>
+
+    <span class="s3"># Exceeds recursion limit</span>
+    <span class="s1">assert_raises(ValueError</span><span class="s0">, </span><span class="s1">np.array</span><span class="s0">, </span><span class="s1">[nested]</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span>
+
+    <span class="s3"># Try with lists...</span>
+    <span class="s1">assert_equal(np.array([</span><span class="s0">None</span><span class="s1">] * </span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.full((</span><span class="s2">10</span><span class="s0">,</span><span class="s1">)</span><span class="s0">, </span><span class="s1">np.nan</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array([[</span><span class="s0">None</span><span class="s1">]] * </span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.full((</span><span class="s2">10</span><span class="s0">, </span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">np.nan</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array([[</span><span class="s0">None</span><span class="s1">] * </span><span class="s2">10</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.full((</span><span class="s2">1</span><span class="s0">, </span><span class="s2">10</span><span class="s1">)</span><span class="s0">, </span><span class="s1">np.nan</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array([[</span><span class="s0">None</span><span class="s1">] * </span><span class="s2">10</span><span class="s1">] * </span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.full((</span><span class="s2">10</span><span class="s0">, </span><span class="s2">10</span><span class="s1">)</span><span class="s0">, </span><span class="s1">np.nan</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+
+    <span class="s1">assert_equal(np.array([</span><span class="s2">1.0</span><span class="s1">] * </span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.ones((</span><span class="s2">10</span><span class="s0">,</span><span class="s1">)</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array([[</span><span class="s2">1.0</span><span class="s1">]] * </span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.ones((</span><span class="s2">10</span><span class="s0">, </span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array([[</span><span class="s2">1.0</span><span class="s1">] * </span><span class="s2">10</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.ones((</span><span class="s2">1</span><span class="s0">, </span><span class="s2">10</span><span class="s1">)</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array([[</span><span class="s2">1.0</span><span class="s1">] * </span><span class="s2">10</span><span class="s1">] * </span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.ones((</span><span class="s2">10</span><span class="s0">, </span><span class="s2">10</span><span class="s1">)</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+
+    <span class="s3"># Try with tuples</span>
+    <span class="s1">assert_equal(np.array((</span><span class="s0">None,</span><span class="s1">) * </span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.full((</span><span class="s2">10</span><span class="s0">,</span><span class="s1">)</span><span class="s0">, </span><span class="s1">np.nan</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array([(</span><span class="s0">None,</span><span class="s1">)] * </span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.full((</span><span class="s2">10</span><span class="s0">, </span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">np.nan</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array([(</span><span class="s0">None,</span><span class="s1">) * </span><span class="s2">10</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.full((</span><span class="s2">1</span><span class="s0">, </span><span class="s2">10</span><span class="s1">)</span><span class="s0">, </span><span class="s1">np.nan</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array([(</span><span class="s0">None,</span><span class="s1">) * </span><span class="s2">10</span><span class="s1">] * </span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.full((</span><span class="s2">10</span><span class="s0">, </span><span class="s2">10</span><span class="s1">)</span><span class="s0">, </span><span class="s1">np.nan</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+
+    <span class="s1">assert_equal(np.array((</span><span class="s2">1.0</span><span class="s0">,</span><span class="s1">) * </span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.ones((</span><span class="s2">10</span><span class="s0">,</span><span class="s1">)</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array([(</span><span class="s2">1.0</span><span class="s0">,</span><span class="s1">)] * </span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.ones((</span><span class="s2">10</span><span class="s0">, </span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array([(</span><span class="s2">1.0</span><span class="s0">,</span><span class="s1">) * </span><span class="s2">10</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.ones((</span><span class="s2">1</span><span class="s0">, </span><span class="s2">10</span><span class="s1">)</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+    <span class="s1">assert_equal(np.array([(</span><span class="s2">1.0</span><span class="s0">,</span><span class="s1">) * </span><span class="s2">10</span><span class="s1">] * </span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.float64)</span><span class="s0">,</span>
+                 <span class="s1">np.ones((</span><span class="s2">10</span><span class="s0">, </span><span class="s2">10</span><span class="s1">)</span><span class="s0">, </span><span class="s1">dtype=np.float64))</span>
+<hr class="ls0"><span class="s1">@pytest.mark.parametrize(</span><span class="s5">&quot;array&quot;</span><span class="s0">, </span><span class="s1">[</span><span class="s0">True, False</span><span class="s1">])</span>
+<span class="s0">def </span><span class="s1">test_array_impossible_casts(array):</span>
+    <span class="s3"># All builtin types can be forcibly cast, at least theoretically,</span>
+    <span class="s3"># but user dtypes cannot necessarily.</span>
+    <span class="s1">rt = rational(</span><span class="s2">1</span><span class="s0">, </span><span class="s2">2</span><span class="s1">)</span>
+    <span class="s0">if </span><span class="s1">array:</span>
+        <span class="s1">rt = np.array(rt)</span>
+    <span class="s0">with </span><span class="s1">assert_raises(TypeError):</span>
+        <span class="s1">np.array(rt</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">&quot;M8&quot;</span><span class="s1">)</span>
+
+<hr class="ls0"><span class="s0">def </span><span class="s1">test_fastCopyAndTranspose():</span>
+    <span class="s3"># 0D array</span>
+    <span class="s1">a = np.array(</span><span class="s2">2</span><span class="s1">)</span>
+    <span class="s1">b = np.fastCopyAndTranspose(a)</span>
+    <span class="s1">assert_equal(b</span><span class="s0">, </span><span class="s1">a.T)</span>
+    <span class="s1">assert_(b.flags.owndata)</span>
+
+    <span class="s3"># 1D array</span>
+    <span class="s1">a = np.array([</span><span class="s2">3</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">7</span><span class="s0">, </span><span class="s2">0</span><span class="s1">])</span>
+    <span class="s1">b = np.fastCopyAndTranspose(a)</span>
+    <span class="s1">assert_equal(b</span><span class="s0">, </span><span class="s1">a.T)</span>
+    <span class="s1">assert_(b.flags.owndata)</span>
+
+    <span class="s3"># 2D array</span>
+    <span class="s1">a = np.arange(</span><span class="s2">6</span><span class="s1">).reshape(</span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s1">)</span>
+    <span class="s1">b = np.fastCopyAndTranspose(a)</span>
+    <span class="s1">assert_equal(b</span><span class="s0">, </span><span class="s1">a.T)</span>
+    <span class="s1">assert_(b.flags.owndata)</span>
+<hr class="ls0"><span class="s0">def </span><span class="s1">test_array_astype():</span>
+    <span class="s1">a = np.arange(</span><span class="s2">6</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'f4'</span><span class="s1">).reshape(</span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s1">)</span>
+    <span class="s3"># Default behavior: allows unsafe casts, keeps memory layout,</span>
+    <span class="s3">#                   always copies.</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'i4'</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_equal(b.dtype</span><span class="s0">, </span><span class="s1">np.dtype(</span><span class="s5">'i4'</span><span class="s1">))</span>
+    <span class="s1">assert_equal(a.strides</span><span class="s0">, </span><span class="s1">b.strides)</span>
+    <span class="s1">b = a.T.astype(</span><span class="s5">'i4'</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a.T</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_equal(b.dtype</span><span class="s0">, </span><span class="s1">np.dtype(</span><span class="s5">'i4'</span><span class="s1">))</span>
+    <span class="s1">assert_equal(a.T.strides</span><span class="s0">, </span><span class="s1">b.strides)</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'f4'</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_(</span><span class="s0">not </span><span class="s1">(a </span><span class="s0">is </span><span class="s1">b))</span>
+
+    <span class="s3"># copy=False parameter can sometimes skip a copy</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'f4'</span><span class="s0">, </span><span class="s1">copy=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">assert_(a </span><span class="s0">is </span><span class="s1">b)</span>
+
+    <span class="s3"># order parameter allows overriding of the memory layout,</span>
+    <span class="s3"># forcing a copy if the layout is wrong</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'f4'</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'F'</span><span class="s0">, </span><span class="s1">copy=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_(</span><span class="s0">not </span><span class="s1">(a </span><span class="s0">is </span><span class="s1">b))</span>
+    <span class="s1">assert_(b.flags.f_contiguous)</span>
+
+    <span class="s1">b = a.astype(</span><span class="s5">'f4'</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'C'</span><span class="s0">, </span><span class="s1">copy=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_(a </span><span class="s0">is </span><span class="s1">b)</span>
+    <span class="s1">assert_(b.flags.c_contiguous)</span>
+
+    <span class="s3"># casting parameter allows catching bad casts</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'c8'</span><span class="s0">, </span><span class="s1">casting=</span><span class="s5">'safe'</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_equal(b.dtype</span><span class="s0">, </span><span class="s1">np.dtype(</span><span class="s5">'c8'</span><span class="s1">))</span>
+
+    <span class="s1">assert_raises(TypeError</span><span class="s0">, </span><span class="s1">a.astype</span><span class="s0">, </span><span class="s5">'i4'</span><span class="s0">, </span><span class="s1">casting=</span><span class="s5">'safe'</span><span class="s1">)</span>
+
+    <span class="s3"># subok=False passes through a non-subclassed array</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'f4'</span><span class="s0">, </span><span class="s1">subok=</span><span class="s2">0</span><span class="s0">, </span><span class="s1">copy=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">assert_(a </span><span class="s0">is </span><span class="s1">b)</span>
+
+    <span class="s0">class </span><span class="s1">MyNDArray(np.ndarray):</span>
+        <span class="s0">pass</span>
+
+    <span class="s1">a = np.array([[</span><span class="s2">0</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s2">2</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">3</span><span class="s0">, </span><span class="s2">4</span><span class="s0">, </span><span class="s2">5</span><span class="s1">]]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'f4'</span><span class="s1">).view(MyNDArray)</span>
+
+    <span class="s3"># subok=True passes through a subclass</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'f4'</span><span class="s0">, </span><span class="s1">subok=</span><span class="s0">True, </span><span class="s1">copy=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">assert_(a </span><span class="s0">is </span><span class="s1">b)</span>
+
+    <span class="s3"># subok=True is default, and creates a subtype on a cast</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'i4'</span><span class="s0">, </span><span class="s1">copy=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_equal(type(b)</span><span class="s0">, </span><span class="s1">MyNDArray)</span>
+
+    <span class="s3"># subok=False never returns a subclass</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'f4'</span><span class="s0">, </span><span class="s1">subok=</span><span class="s0">False, </span><span class="s1">copy=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_(</span><span class="s0">not </span><span class="s1">(a </span><span class="s0">is </span><span class="s1">b))</span>
+    <span class="s1">assert_(type(b) </span><span class="s0">is not </span><span class="s1">MyNDArray)</span>
+
+    <span class="s3"># Make sure converting from string object to fixed length string</span>
+    <span class="s3"># does not truncate.</span>
+    <span class="s1">a = np.array([</span><span class="s4">b'a'</span><span class="s1">*</span><span class="s2">100</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'O'</span><span class="s1">)</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'S'</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_equal(b.dtype</span><span class="s0">, </span><span class="s1">np.dtype(</span><span class="s5">'S100'</span><span class="s1">))</span>
+    <span class="s1">a = np.array([</span><span class="s5">u'a'</span><span class="s1">*</span><span class="s2">100</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'O'</span><span class="s1">)</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'U'</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_equal(b.dtype</span><span class="s0">, </span><span class="s1">np.dtype(</span><span class="s5">'U100'</span><span class="s1">))</span>
+
+    <span class="s3"># Same test as above but for strings shorter than 64 characters</span>
+    <span class="s1">a = np.array([</span><span class="s4">b'a'</span><span class="s1">*</span><span class="s2">10</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'O'</span><span class="s1">)</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'S'</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_equal(b.dtype</span><span class="s0">, </span><span class="s1">np.dtype(</span><span class="s5">'S10'</span><span class="s1">))</span>
+    <span class="s1">a = np.array([</span><span class="s5">u'a'</span><span class="s1">*</span><span class="s2">10</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'O'</span><span class="s1">)</span>
+    <span class="s1">b = a.astype(</span><span class="s5">'U'</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_equal(b.dtype</span><span class="s0">, </span><span class="s1">np.dtype(</span><span class="s5">'U10'</span><span class="s1">))</span>
+
+    <span class="s1">a = np.array(</span><span class="s2">123456789012345678901234567890</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'O'</span><span class="s1">).astype(</span><span class="s5">'S'</span><span class="s1">)</span>
+    <span class="s1">assert_array_equal(a</span><span class="s0">, </span><span class="s1">np.array(</span><span class="s4">b'1234567890' </span><span class="s1">* </span><span class="s2">3</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'S30'</span><span class="s1">))</span>
+    <span class="s1">a = np.array(</span><span class="s2">123456789012345678901234567890</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'O'</span><span class="s1">).astype(</span><span class="s5">'U'</span><span class="s1">)</span>
+    <span class="s1">assert_array_equal(a</span><span class="s0">, </span><span class="s1">np.array(</span><span class="s5">u'1234567890' </span><span class="s1">* </span><span class="s2">3</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'U30'</span><span class="s1">))</span>
+
+    <span class="s1">a = np.array([</span><span class="s2">123456789012345678901234567890</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'O'</span><span class="s1">).astype(</span><span class="s5">'S'</span><span class="s1">)</span>
+    <span class="s1">assert_array_equal(a</span><span class="s0">, </span><span class="s1">np.array(</span><span class="s4">b'1234567890' </span><span class="s1">* </span><span class="s2">3</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'S30'</span><span class="s1">))</span>
+    <span class="s1">a = np.array([</span><span class="s2">123456789012345678901234567890</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'O'</span><span class="s1">).astype(</span><span class="s5">'U'</span><span class="s1">)</span>
+    <span class="s1">assert_array_equal(a</span><span class="s0">, </span><span class="s1">np.array(</span><span class="s5">u'1234567890' </span><span class="s1">* </span><span class="s2">3</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'U30'</span><span class="s1">))</span>
+
+    <span class="s1">a = np.array(</span><span class="s2">123456789012345678901234567890</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'S'</span><span class="s1">)</span>
+    <span class="s1">assert_array_equal(a</span><span class="s0">, </span><span class="s1">np.array(</span><span class="s4">b'1234567890' </span><span class="s1">* </span><span class="s2">3</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'S30'</span><span class="s1">))</span>
+    <span class="s1">a = np.array(</span><span class="s2">123456789012345678901234567890</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'U'</span><span class="s1">)</span>
+    <span class="s1">assert_array_equal(a</span><span class="s0">, </span><span class="s1">np.array(</span><span class="s5">u'1234567890' </span><span class="s1">* </span><span class="s2">3</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'U30'</span><span class="s1">))</span>
+
+    <span class="s1">a = np.array(</span><span class="s5">u'a</span><span class="s0">\u0140</span><span class="s5">'</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'U'</span><span class="s1">)</span>
+    <span class="s1">b = np.ndarray(buffer=a</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'uint32'</span><span class="s0">, </span><span class="s1">shape=</span><span class="s2">2</span><span class="s1">)</span>
+    <span class="s1">assert_(b.size == </span><span class="s2">2</span><span class="s1">)</span>
+
+    <span class="s1">a = np.array([</span><span class="s2">1000</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'i4'</span><span class="s1">)</span>
+    <span class="s1">assert_raises(TypeError</span><span class="s0">, </span><span class="s1">a.astype</span><span class="s0">, </span><span class="s5">'S1'</span><span class="s0">, </span><span class="s1">casting=</span><span class="s5">'safe'</span><span class="s1">)</span>
+
+    <span class="s1">a = np.array(</span><span class="s2">1000</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'i4'</span><span class="s1">)</span>
+    <span class="s1">assert_raises(TypeError</span><span class="s0">, </span><span class="s1">a.astype</span><span class="s0">, </span><span class="s5">'U1'</span><span class="s0">, </span><span class="s1">casting=</span><span class="s5">'safe'</span><span class="s1">)</span>
+<hr class="ls0"><span class="s1">@pytest.mark.parametrize(</span><span class="s5">&quot;dt&quot;</span><span class="s0">, </span><span class="s1">[</span><span class="s5">&quot;S&quot;</span><span class="s0">, </span><span class="s5">&quot;U&quot;</span><span class="s1">])</span>
+<span class="s0">def </span><span class="s1">test_array_astype_to_string_discovery_empty(dt):</span>
+    <span class="s3"># See also gh-19085</span>
+    <span class="s1">arr = np.array([</span><span class="s5">&quot;&quot;</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=object)</span>
+    <span class="s3"># Note, the itemsize is the `0 -&gt; 1` logic, which should change.</span>
+    <span class="s3"># The important part the test is rather that it does not error.</span>
+    <span class="s0">assert </span><span class="s1">arr.astype(dt).dtype.itemsize == np.dtype(</span><span class="s5">f&quot;</span><span class="s0">{</span><span class="s1">dt</span><span class="s0">}</span><span class="s5">1&quot;</span><span class="s1">).itemsize</span>
+
+    <span class="s3"># check the same thing for `np.can_cast` (since it accepts arrays)</span>
+    <span class="s0">assert </span><span class="s1">np.can_cast(arr</span><span class="s0">, </span><span class="s1">dt</span><span class="s0">, </span><span class="s1">casting=</span><span class="s5">&quot;unsafe&quot;</span><span class="s1">)</span>
+    <span class="s0">assert not </span><span class="s1">np.can_cast(arr</span><span class="s0">, </span><span class="s1">dt</span><span class="s0">, </span><span class="s1">casting=</span><span class="s5">&quot;same_kind&quot;</span><span class="s1">)</span>
+    <span class="s3"># as well as for the object as a descriptor:</span>
+    <span class="s0">assert </span><span class="s1">np.can_cast(</span><span class="s5">&quot;O&quot;</span><span class="s0">, </span><span class="s1">dt</span><span class="s0">, </span><span class="s1">casting=</span><span class="s5">&quot;unsafe&quot;</span><span class="s1">)</span>
+<hr class="ls0"><span class="s1">@pytest.mark.parametrize(</span><span class="s5">&quot;dt&quot;</span><span class="s0">, </span><span class="s1">[</span><span class="s5">&quot;d&quot;</span><span class="s0">, </span><span class="s5">&quot;f&quot;</span><span class="s0">, </span><span class="s5">&quot;S13&quot;</span><span class="s0">, </span><span class="s5">&quot;U32&quot;</span><span class="s1">])</span>
+<span class="s0">def </span><span class="s1">test_array_astype_to_void(dt):</span>
+    <span class="s1">dt = np.dtype(dt)</span>
+    <span class="s1">arr = np.array([]</span><span class="s0">, </span><span class="s1">dtype=dt)</span>
+    <span class="s0">assert </span><span class="s1">arr.astype(</span><span class="s5">&quot;V&quot;</span><span class="s1">).dtype.itemsize == dt.itemsize</span>
+<hr class="ls0"><span class="s0">def </span><span class="s1">test_object_array_astype_to_void():</span>
+    <span class="s3"># This is different to `test_array_astype_to_void` as object arrays</span>
+    <span class="s3"># are inspected.  The default void is &quot;V8&quot; (8 is the length of double)</span>
+    <span class="s1">arr = np.array([]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">&quot;O&quot;</span><span class="s1">).astype(</span><span class="s5">&quot;V&quot;</span><span class="s1">)</span>
+    <span class="s0">assert </span><span class="s1">arr.dtype == </span><span class="s5">&quot;V8&quot;</span>
+<hr class="ls0"><span class="s1">@pytest.mark.parametrize(</span><span class="s5">&quot;t&quot;</span><span class="s0">,</span>
+    <span class="s1">np.sctypes[</span><span class="s5">'uint'</span><span class="s1">] + np.sctypes[</span><span class="s5">'int'</span><span class="s1">] + np.sctypes[</span><span class="s5">'float'</span><span class="s1">]</span>
+<span class="s1">)</span>
+<span class="s0">def </span><span class="s1">test_array_astype_warning(t):</span>
+    <span class="s3"># test ComplexWarning when casting from complex to float or int</span>
+    <span class="s1">a = np.array(</span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.complex_)</span>
+    <span class="s1">assert_warns(np.ComplexWarning</span><span class="s0">, </span><span class="s1">a.astype</span><span class="s0">, </span><span class="s1">t)</span>
+<hr class="ls0"><span class="s1">@pytest.mark.parametrize([</span><span class="s5">&quot;dtype&quot;</span><span class="s0">, </span><span class="s5">&quot;out_dtype&quot;</span><span class="s1">]</span><span class="s0">,</span>
+        <span class="s1">[(np.bytes_</span><span class="s0">, </span><span class="s1">np.bool_)</span><span class="s0">,</span>
+         <span class="s1">(np.unicode_</span><span class="s0">, </span><span class="s1">np.bool_)</span><span class="s0">,</span>
+         <span class="s1">(np.dtype(</span><span class="s5">&quot;S10,S9&quot;</span><span class="s1">)</span><span class="s0">, </span><span class="s1">np.dtype(</span><span class="s5">&quot;?,?&quot;</span><span class="s1">))])</span>
+<span class="s0">def </span><span class="s1">test_string_to_boolean_cast(dtype</span><span class="s0">, </span><span class="s1">out_dtype):</span>
+    <span class="s6">&quot;&quot;&quot; 
+    Currently, for `astype` strings are cast to booleans effectively by 
+    calling `bool(int(string)`. This is not consistent (see gh-9875) and 
+    will eventually be deprecated. 
+    &quot;&quot;&quot;</span>
+    <span class="s1">arr = np.array([</span><span class="s5">&quot;10&quot;</span><span class="s0">, </span><span class="s5">&quot;10</span><span class="s0">\0\0\0</span><span class="s5">&quot;</span><span class="s0">, </span><span class="s5">&quot;0</span><span class="s0">\0\0</span><span class="s5">&quot;</span><span class="s0">, </span><span class="s5">&quot;0&quot;</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=dtype)</span>
+    <span class="s1">expected = np.array([</span><span class="s0">True, True, False, False</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=out_dtype)</span>
+    <span class="s1">assert_array_equal(arr.astype(out_dtype)</span><span class="s0">, </span><span class="s1">expected)</span>
+<hr class="ls0"><span class="s1">@pytest.mark.parametrize([</span><span class="s5">&quot;dtype&quot;</span><span class="s0">, </span><span class="s5">&quot;out_dtype&quot;</span><span class="s1">]</span><span class="s0">,</span>
+        <span class="s1">[(np.bytes_</span><span class="s0">, </span><span class="s1">np.bool_)</span><span class="s0">,</span>
+         <span class="s1">(np.unicode_</span><span class="s0">, </span><span class="s1">np.bool_)</span><span class="s0">,</span>
+         <span class="s1">(np.dtype(</span><span class="s5">&quot;S10,S9&quot;</span><span class="s1">)</span><span class="s0">, </span><span class="s1">np.dtype(</span><span class="s5">&quot;?,?&quot;</span><span class="s1">))])</span>
+<span class="s0">def </span><span class="s1">test_string_to_boolean_cast_errors(dtype</span><span class="s0">, </span><span class="s1">out_dtype):</span>
+    <span class="s6">&quot;&quot;&quot; 
+    These currently error out, since cast to integers fails, but should not 
+    error out in the future. 
+    &quot;&quot;&quot;</span>
+    <span class="s0">for </span><span class="s1">invalid </span><span class="s0">in </span><span class="s1">[</span><span class="s5">&quot;False&quot;</span><span class="s0">, </span><span class="s5">&quot;True&quot;</span><span class="s0">, </span><span class="s5">&quot;&quot;</span><span class="s0">, </span><span class="s5">&quot;</span><span class="s0">\0</span><span class="s5">&quot;</span><span class="s0">, </span><span class="s5">&quot;non-empty&quot;</span><span class="s1">]:</span>
+        <span class="s1">arr = np.array([invalid]</span><span class="s0">, </span><span class="s1">dtype=dtype)</span>
+        <span class="s0">with </span><span class="s1">assert_raises(ValueError):</span>
+            <span class="s1">arr.astype(out_dtype)</span>
+<hr class="ls0"><span class="s1">@pytest.mark.parametrize(</span><span class="s5">&quot;str_type&quot;</span><span class="s0">, </span><span class="s1">[str</span><span class="s0">, </span><span class="s1">bytes</span><span class="s0">, </span><span class="s1">np.str_</span><span class="s0">, </span><span class="s1">np.unicode_])</span>
+<span class="s1">@pytest.mark.parametrize(</span><span class="s5">&quot;scalar_type&quot;</span><span class="s0">,</span>
+        <span class="s1">[np.complex64</span><span class="s0">, </span><span class="s1">np.complex128</span><span class="s0">, </span><span class="s1">np.clongdouble])</span>
+<span class="s0">def </span><span class="s1">test_string_to_complex_cast(str_type</span><span class="s0">, </span><span class="s1">scalar_type):</span>
+    <span class="s1">value = scalar_type(</span><span class="s4">b&quot;1+3j&quot;</span><span class="s1">)</span>
+    <span class="s0">assert </span><span class="s1">scalar_type(value) == </span><span class="s2">1</span><span class="s1">+</span><span class="s2">3j</span>
+    <span class="s0">assert </span><span class="s1">np.array([value]</span><span class="s0">, </span><span class="s1">dtype=object).astype(scalar_type)[()] == </span><span class="s2">1</span><span class="s1">+</span><span class="s2">3j</span>
+    <span class="s0">assert </span><span class="s1">np.array(value).astype(scalar_type)[()] == </span><span class="s2">1</span><span class="s1">+</span><span class="s2">3j</span>
+    <span class="s1">arr = np.zeros(</span><span class="s2">1</span><span class="s0">, </span><span class="s1">dtype=scalar_type)</span>
+    <span class="s1">arr[</span><span class="s2">0</span><span class="s1">] = value</span>
+    <span class="s0">assert </span><span class="s1">arr[</span><span class="s2">0</span><span class="s1">] == </span><span class="s2">1</span><span class="s1">+</span><span class="s2">3j</span>
+<hr class="ls0"><span class="s1">@pytest.mark.parametrize(</span><span class="s5">&quot;dtype&quot;</span><span class="s0">, </span><span class="s1">np.typecodes[</span><span class="s5">&quot;AllFloat&quot;</span><span class="s1">])</span>
+<span class="s0">def </span><span class="s1">test_none_to_nan_cast(dtype):</span>
+    <span class="s3"># Note that at the time of writing this test, the scalar constructors</span>
+    <span class="s3"># reject None</span>
+    <span class="s1">arr = np.zeros(</span><span class="s2">1</span><span class="s0">, </span><span class="s1">dtype=dtype)</span>
+    <span class="s1">arr[</span><span class="s2">0</span><span class="s1">] = </span><span class="s0">None</span>
+    <span class="s0">assert </span><span class="s1">np.isnan(arr)[</span><span class="s2">0</span><span class="s1">]</span>
+    <span class="s0">assert </span><span class="s1">np.isnan(np.array(</span><span class="s0">None, </span><span class="s1">dtype=dtype))[()]</span>
+    <span class="s0">assert </span><span class="s1">np.isnan(np.array([</span><span class="s0">None</span><span class="s1">]</span><span class="s0">, </span><span class="s1">dtype=dtype))[</span><span class="s2">0</span><span class="s1">]</span>
+    <span class="s0">assert </span><span class="s1">np.isnan(np.array(</span><span class="s0">None</span><span class="s1">).astype(dtype))[()]</span>
+<hr class="ls0"><span class="s0">def </span><span class="s1">test_copyto_fromscalar():</span>
+    <span class="s1">a = np.arange(</span><span class="s2">6</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'f4'</span><span class="s1">).reshape(</span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s1">)</span>
+
+    <span class="s3"># Simple copy</span>
+    <span class="s1">np.copyto(a</span><span class="s0">, </span><span class="s2">1.5</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s2">1.5</span><span class="s1">)</span>
+    <span class="s1">np.copyto(a.T</span><span class="s0">, </span><span class="s2">2.5</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s2">2.5</span><span class="s1">)</span>
+
+    <span class="s3"># Where-masked copy</span>
+    <span class="s1">mask = np.array([[</span><span class="s2">0</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s2">0</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">0</span><span class="s0">, </span><span class="s2">0</span><span class="s0">, </span><span class="s2">1</span><span class="s1">]]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'?'</span><span class="s1">)</span>
+    <span class="s1">np.copyto(a</span><span class="s0">, </span><span class="s2">3.5</span><span class="s0">, </span><span class="s1">where=mask)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">[[</span><span class="s2">2.5</span><span class="s0">, </span><span class="s2">3.5</span><span class="s0">, </span><span class="s2">2.5</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">2.5</span><span class="s0">, </span><span class="s2">2.5</span><span class="s0">, </span><span class="s2">3.5</span><span class="s1">]])</span>
+    <span class="s1">mask = np.array([[</span><span class="s2">0</span><span class="s0">, </span><span class="s2">1</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">1</span><span class="s0">, </span><span class="s2">1</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">1</span><span class="s0">, </span><span class="s2">0</span><span class="s1">]]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'?'</span><span class="s1">)</span>
+    <span class="s1">np.copyto(a.T</span><span class="s0">, </span><span class="s2">4.5</span><span class="s0">, </span><span class="s1">where=mask)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">[[</span><span class="s2">2.5</span><span class="s0">, </span><span class="s2">4.5</span><span class="s0">, </span><span class="s2">4.5</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">4.5</span><span class="s0">, </span><span class="s2">4.5</span><span class="s0">, </span><span class="s2">3.5</span><span class="s1">]])</span>
+<hr class="ls0"><span class="s0">def </span><span class="s1">test_copyto():</span>
+    <span class="s1">a = np.arange(</span><span class="s2">6</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'i4'</span><span class="s1">).reshape(</span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s1">)</span>
+
+    <span class="s3"># Simple copy</span>
+    <span class="s1">np.copyto(a</span><span class="s0">, </span><span class="s1">[[</span><span class="s2">3</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s2">5</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">6</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">1</span><span class="s1">]])</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">[[</span><span class="s2">3</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s2">5</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">6</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">1</span><span class="s1">]])</span>
+
+    <span class="s3"># Overlapping copy should work</span>
+    <span class="s1">np.copyto(a[:</span><span class="s0">, </span><span class="s1">:</span><span class="s2">2</span><span class="s1">]</span><span class="s0">, </span><span class="s1">a[::-</span><span class="s2">1</span><span class="s0">, </span><span class="s2">1</span><span class="s1">::-</span><span class="s2">1</span><span class="s1">])</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">[[</span><span class="s2">2</span><span class="s0">, </span><span class="s2">6</span><span class="s0">, </span><span class="s2">5</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">1</span><span class="s0">, </span><span class="s2">3</span><span class="s0">, </span><span class="s2">1</span><span class="s1">]])</span>
+
+    <span class="s3"># Defaults to 'same_kind' casting</span>
+    <span class="s1">assert_raises(TypeError</span><span class="s0">, </span><span class="s1">np.copyto</span><span class="s0">, </span><span class="s1">a</span><span class="s0">, </span><span class="s2">1.5</span><span class="s1">)</span>
+
+    <span class="s3"># Force a copy with 'unsafe' casting, truncating 1.5 to 1</span>
+    <span class="s1">np.copyto(a</span><span class="s0">, </span><span class="s2">1.5</span><span class="s0">, </span><span class="s1">casting=</span><span class="s5">'unsafe'</span><span class="s1">)</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s2">1</span><span class="s1">)</span>
+
+    <span class="s3"># Copying with a mask</span>
+    <span class="s1">np.copyto(a</span><span class="s0">, </span><span class="s2">3</span><span class="s0">, </span><span class="s1">where=[</span><span class="s0">True, False, True</span><span class="s1">])</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">[[</span><span class="s2">3</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s2">3</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">3</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s2">3</span><span class="s1">]])</span>
+
+    <span class="s3"># Casting rule still applies with a mask</span>
+    <span class="s1">assert_raises(TypeError</span><span class="s0">, </span><span class="s1">np.copyto</span><span class="s0">, </span><span class="s1">a</span><span class="s0">, </span><span class="s2">3.5</span><span class="s0">, </span><span class="s1">where=[</span><span class="s0">True, False, True</span><span class="s1">])</span>
+
+    <span class="s3"># Lists of integer 0's and 1's is ok too</span>
+    <span class="s1">np.copyto(a</span><span class="s0">, </span><span class="s2">4.0</span><span class="s0">, </span><span class="s1">casting=</span><span class="s5">'unsafe'</span><span class="s0">, </span><span class="s1">where=[[</span><span class="s2">0</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s2">1</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">1</span><span class="s0">, </span><span class="s2">0</span><span class="s0">, </span><span class="s2">0</span><span class="s1">]])</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">[[</span><span class="s2">3</span><span class="s0">, </span><span class="s2">4</span><span class="s0">, </span><span class="s2">4</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">4</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s2">3</span><span class="s1">]])</span>
+
+    <span class="s3"># Overlapping copy with mask should work</span>
+    <span class="s1">np.copyto(a[:</span><span class="s0">, </span><span class="s1">:</span><span class="s2">2</span><span class="s1">]</span><span class="s0">, </span><span class="s1">a[::-</span><span class="s2">1</span><span class="s0">, </span><span class="s2">1</span><span class="s1">::-</span><span class="s2">1</span><span class="s1">]</span><span class="s0">, </span><span class="s1">where=[[</span><span class="s2">0</span><span class="s0">, </span><span class="s2">1</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">1</span><span class="s0">, </span><span class="s2">1</span><span class="s1">]])</span>
+    <span class="s1">assert_equal(a</span><span class="s0">, </span><span class="s1">[[</span><span class="s2">3</span><span class="s0">, </span><span class="s2">4</span><span class="s0">, </span><span class="s2">4</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">4</span><span class="s0">, </span><span class="s2">3</span><span class="s0">, </span><span class="s2">3</span><span class="s1">]])</span>
+
+    <span class="s3"># 'dst' must be an array</span>
+    <span class="s1">assert_raises(TypeError</span><span class="s0">, </span><span class="s1">np.copyto</span><span class="s0">, </span><span class="s1">[</span><span class="s2">1</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s0">, </span><span class="s2">4</span><span class="s1">])</span>
+<hr class="ls0"><span class="s0">def </span><span class="s1">test_copyto_permut():</span>
+    <span class="s3"># test explicit overflow case</span>
+    <span class="s1">pad = </span><span class="s2">500</span>
+    <span class="s1">l = [</span><span class="s0">True</span><span class="s1">] * pad + [</span><span class="s0">True, True, True, True</span><span class="s1">]</span>
+    <span class="s1">r = np.zeros(len(l)-pad)</span>
+    <span class="s1">d = np.ones(len(l)-pad)</span>
+    <span class="s1">mask = np.array(l)[pad:]</span>
+    <span class="s1">np.copyto(r</span><span class="s0">, </span><span class="s1">d</span><span class="s0">, </span><span class="s1">where=mask[::-</span><span class="s2">1</span><span class="s1">])</span>
+
+    <span class="s3"># test all permutation of possible masks, 9 should be sufficient for</span>
+    <span class="s3"># current 4 byte unrolled code</span>
+    <span class="s1">power = </span><span class="s2">9</span>
+    <span class="s1">d = np.ones(power)</span>
+    <span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range(</span><span class="s2">2</span><span class="s1">**power):</span>
+        <span class="s1">r = np.zeros(power)</span>
+        <span class="s1">l = [(i &amp; x) != </span><span class="s2">0 </span><span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">range(power)]</span>
+        <span class="s1">mask = np.array(l)</span>
+        <span class="s1">np.copyto(r</span><span class="s0">, </span><span class="s1">d</span><span class="s0">, </span><span class="s1">where=mask)</span>
+        <span class="s1">assert_array_equal(r == </span><span class="s2">1</span><span class="s0">, </span><span class="s1">l)</span>
+        <span class="s1">assert_equal(r.sum()</span><span class="s0">, </span><span class="s1">sum(l))</span>
+
+        <span class="s1">r = np.zeros(power)</span>
+        <span class="s1">np.copyto(r</span><span class="s0">, </span><span class="s1">d</span><span class="s0">, </span><span class="s1">where=mask[::-</span><span class="s2">1</span><span class="s1">])</span>
+        <span class="s1">assert_array_equal(r == </span><span class="s2">1</span><span class="s0">, </span><span class="s1">l[::-</span><span class="s2">1</span><span class="s1">])</span>
+        <span class="s1">assert_equal(r.sum()</span><span class="s0">, </span><span class="s1">sum(l))</span>
+
+        <span class="s1">r = np.zeros(power)</span>
+        <span class="s1">np.copyto(r[::</span><span class="s2">2</span><span class="s1">]</span><span class="s0">, </span><span class="s1">d[::</span><span class="s2">2</span><span class="s1">]</span><span class="s0">, </span><span class="s1">where=mask[::</span><span class="s2">2</span><span class="s1">])</span>
+        <span class="s1">assert_array_equal(r[::</span><span class="s2">2</span><span class="s1">] == </span><span class="s2">1</span><span class="s0">, </span><span class="s1">l[::</span><span class="s2">2</span><span class="s1">])</span>
+        <span class="s1">assert_equal(r[::</span><span class="s2">2</span><span class="s1">].sum()</span><span class="s0">, </span><span class="s1">sum(l[::</span><span class="s2">2</span><span class="s1">]))</span>
+
+        <span class="s1">r = np.zeros(power)</span>
+        <span class="s1">np.copyto(r[::</span><span class="s2">2</span><span class="s1">]</span><span class="s0">, </span><span class="s1">d[::</span><span class="s2">2</span><span class="s1">]</span><span class="s0">, </span><span class="s1">where=mask[::-</span><span class="s2">2</span><span class="s1">])</span>
+        <span class="s1">assert_array_equal(r[::</span><span class="s2">2</span><span class="s1">] == </span><span class="s2">1</span><span class="s0">, </span><span class="s1">l[::-</span><span class="s2">2</span><span class="s1">])</span>
+        <span class="s1">assert_equal(r[::</span><span class="s2">2</span><span class="s1">].sum()</span><span class="s0">, </span><span class="s1">sum(l[::-</span><span class="s2">2</span><span class="s1">]))</span>
+
+        <span class="s0">for </span><span class="s1">c </span><span class="s0">in </span><span class="s1">[</span><span class="s2">0xFF</span><span class="s0">, </span><span class="s2">0x7F</span><span class="s0">, </span><span class="s2">0x02</span><span class="s0">, </span><span class="s2">0x10</span><span class="s1">]:</span>
+            <span class="s1">r = np.zeros(power)</span>
+            <span class="s1">mask = np.array(l)</span>
+            <span class="s1">imask = np.array(l).view(np.uint8)</span>
+            <span class="s1">imask[mask != </span><span class="s2">0</span><span class="s1">] = c</span>
+            <span class="s1">np.copyto(r</span><span class="s0">, </span><span class="s1">d</span><span class="s0">, </span><span class="s1">where=mask)</span>
+            <span class="s1">assert_array_equal(r == </span><span class="s2">1</span><span class="s0">, </span><span class="s1">l)</span>
+            <span class="s1">assert_equal(r.sum()</span><span class="s0">, </span><span class="s1">sum(l))</span>
+
+    <span class="s1">r = np.zeros(power)</span>
+    <span class="s1">np.copyto(r</span><span class="s0">, </span><span class="s1">d</span><span class="s0">, </span><span class="s1">where=</span><span class="s0">True</span><span class="s1">)</span>
+    <span class="s1">assert_equal(r.sum()</span><span class="s0">, </span><span class="s1">r.size)</span>
+    <span class="s1">r = np.ones(power)</span>
+    <span class="s1">d = np.zeros(power)</span>
+    <span class="s1">np.copyto(r</span><span class="s0">, </span><span class="s1">d</span><span class="s0">, </span><span class="s1">where=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">assert_equal(r.sum()</span><span class="s0">, </span><span class="s1">r.size)</span>
+<hr class="ls0"><span class="s0">def </span><span class="s1">test_copy_order():</span>
+    <span class="s1">a = np.arange(</span><span class="s2">24</span><span class="s1">).reshape(</span><span class="s2">2</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s2">3</span><span class="s0">, </span><span class="s2">4</span><span class="s1">)</span>
+    <span class="s1">b = a.copy(order=</span><span class="s5">'F'</span><span class="s1">)</span>
+    <span class="s1">c = np.arange(</span><span class="s2">24</span><span class="s1">).reshape(</span><span class="s2">2</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s2">4</span><span class="s0">, </span><span class="s2">3</span><span class="s1">).swapaxes(</span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s1">)</span>
+
+    <span class="s0">def </span><span class="s1">check_copy_result(x</span><span class="s0">, </span><span class="s1">y</span><span class="s0">, </span><span class="s1">ccontig</span><span class="s0">, </span><span class="s1">fcontig</span><span class="s0">, </span><span class="s1">strides=</span><span class="s0">False</span><span class="s1">):</span>
+        <span class="s1">assert_(</span><span class="s0">not </span><span class="s1">(x </span><span class="s0">is </span><span class="s1">y))</span>
+        <span class="s1">assert_equal(x</span><span class="s0">, </span><span class="s1">y)</span>
+        <span class="s1">assert_equal(res.flags.c_contiguous</span><span class="s0">, </span><span class="s1">ccontig)</span>
+        <span class="s1">assert_equal(res.flags.f_contiguous</span><span class="s0">, </span><span class="s1">fcontig)</span>
+
+    <span class="s3"># Validate the initial state of a, b, and c</span>
+    <span class="s1">assert_(a.flags.c_contiguous)</span>
+    <span class="s1">assert_(</span><span class="s0">not </span><span class="s1">a.flags.f_contiguous)</span>
+    <span class="s1">assert_(</span><span class="s0">not </span><span class="s1">b.flags.c_contiguous)</span>
+    <span class="s1">assert_(b.flags.f_contiguous)</span>
+    <span class="s1">assert_(</span><span class="s0">not </span><span class="s1">c.flags.c_contiguous)</span>
+    <span class="s1">assert_(</span><span class="s0">not </span><span class="s1">c.flags.f_contiguous)</span>
+
+    <span class="s3"># Copy with order='C'</span>
+    <span class="s1">res = a.copy(order=</span><span class="s5">'C'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">a</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">True, </span><span class="s1">fcontig=</span><span class="s0">False, </span><span class="s1">strides=</span><span class="s0">True</span><span class="s1">)</span>
+    <span class="s1">res = b.copy(order=</span><span class="s5">'C'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">b</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">True, </span><span class="s1">fcontig=</span><span class="s0">False, </span><span class="s1">strides=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">res = c.copy(order=</span><span class="s5">'C'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">c</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">True, </span><span class="s1">fcontig=</span><span class="s0">False, </span><span class="s1">strides=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">res = np.copy(a</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'C'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">a</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">True, </span><span class="s1">fcontig=</span><span class="s0">False, </span><span class="s1">strides=</span><span class="s0">True</span><span class="s1">)</span>
+    <span class="s1">res = np.copy(b</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'C'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">b</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">True, </span><span class="s1">fcontig=</span><span class="s0">False, </span><span class="s1">strides=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">res = np.copy(c</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'C'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">c</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">True, </span><span class="s1">fcontig=</span><span class="s0">False, </span><span class="s1">strides=</span><span class="s0">False</span><span class="s1">)</span>
+
+    <span class="s3"># Copy with order='F'</span>
+    <span class="s1">res = a.copy(order=</span><span class="s5">'F'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">a</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">False, </span><span class="s1">fcontig=</span><span class="s0">True, </span><span class="s1">strides=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">res = b.copy(order=</span><span class="s5">'F'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">b</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">False, </span><span class="s1">fcontig=</span><span class="s0">True, </span><span class="s1">strides=</span><span class="s0">True</span><span class="s1">)</span>
+    <span class="s1">res = c.copy(order=</span><span class="s5">'F'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">c</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">False, </span><span class="s1">fcontig=</span><span class="s0">True, </span><span class="s1">strides=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">res = np.copy(a</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'F'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">a</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">False, </span><span class="s1">fcontig=</span><span class="s0">True, </span><span class="s1">strides=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">res = np.copy(b</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'F'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">b</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">False, </span><span class="s1">fcontig=</span><span class="s0">True, </span><span class="s1">strides=</span><span class="s0">True</span><span class="s1">)</span>
+    <span class="s1">res = np.copy(c</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'F'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">c</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">False, </span><span class="s1">fcontig=</span><span class="s0">True, </span><span class="s1">strides=</span><span class="s0">False</span><span class="s1">)</span>
+
+    <span class="s3"># Copy with order='K'</span>
+    <span class="s1">res = a.copy(order=</span><span class="s5">'K'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">a</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">True, </span><span class="s1">fcontig=</span><span class="s0">False, </span><span class="s1">strides=</span><span class="s0">True</span><span class="s1">)</span>
+    <span class="s1">res = b.copy(order=</span><span class="s5">'K'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">b</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">False, </span><span class="s1">fcontig=</span><span class="s0">True, </span><span class="s1">strides=</span><span class="s0">True</span><span class="s1">)</span>
+    <span class="s1">res = c.copy(order=</span><span class="s5">'K'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">c</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">False, </span><span class="s1">fcontig=</span><span class="s0">False, </span><span class="s1">strides=</span><span class="s0">True</span><span class="s1">)</span>
+    <span class="s1">res = np.copy(a</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'K'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">a</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">True, </span><span class="s1">fcontig=</span><span class="s0">False, </span><span class="s1">strides=</span><span class="s0">True</span><span class="s1">)</span>
+    <span class="s1">res = np.copy(b</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'K'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">b</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">False, </span><span class="s1">fcontig=</span><span class="s0">True, </span><span class="s1">strides=</span><span class="s0">True</span><span class="s1">)</span>
+    <span class="s1">res = np.copy(c</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'K'</span><span class="s1">)</span>
+    <span class="s1">check_copy_result(res</span><span class="s0">, </span><span class="s1">c</span><span class="s0">, </span><span class="s1">ccontig=</span><span class="s0">False, </span><span class="s1">fcontig=</span><span class="s0">False, </span><span class="s1">strides=</span><span class="s0">True</span><span class="s1">)</span>
+<hr class="ls0"><span class="s0">def </span><span class="s1">test_contiguous_flags():</span>
+    <span class="s1">a = np.ones((</span><span class="s2">4</span><span class="s0">, </span><span class="s2">4</span><span class="s0">, </span><span class="s2">1</span><span class="s1">))[::</span><span class="s2">2</span><span class="s0">,</span><span class="s1">:</span><span class="s0">,</span><span class="s1">:]</span>
+    <span class="s1">a.strides = a.strides[:</span><span class="s2">2</span><span class="s1">] + (-</span><span class="s2">123</span><span class="s0">,</span><span class="s1">)</span>
+    <span class="s1">b = np.ones((</span><span class="s2">2</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">2</span><span class="s1">)).swapaxes(</span><span class="s2">3</span><span class="s0">, </span><span class="s2">4</span><span class="s1">)</span>
+
+    <span class="s0">def </span><span class="s1">check_contig(a</span><span class="s0">, </span><span class="s1">ccontig</span><span class="s0">, </span><span class="s1">fcontig):</span>
+        <span class="s1">assert_(a.flags.c_contiguous == ccontig)</span>
+        <span class="s1">assert_(a.flags.f_contiguous == fcontig)</span>
+
+    <span class="s3"># Check if new arrays are correct:</span>
+    <span class="s1">check_contig(a</span><span class="s0">, False, False</span><span class="s1">)</span>
+    <span class="s1">check_contig(b</span><span class="s0">, False, False</span><span class="s1">)</span>
+    <span class="s1">check_contig(np.empty((</span><span class="s2">2</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">0</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">2</span><span class="s1">))</span><span class="s0">, True, True</span><span class="s1">)</span>
+    <span class="s1">check_contig(np.array([[[</span><span class="s2">1</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">2</span><span class="s1">]]]</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'F'</span><span class="s1">)</span><span class="s0">, True, True</span><span class="s1">)</span>
+    <span class="s1">check_contig(np.empty((</span><span class="s2">2</span><span class="s0">, </span><span class="s2">2</span><span class="s1">))</span><span class="s0">, True, False</span><span class="s1">)</span>
+    <span class="s1">check_contig(np.empty((</span><span class="s2">2</span><span class="s0">, </span><span class="s2">2</span><span class="s1">)</span><span class="s0">, </span><span class="s1">order=</span><span class="s5">'F'</span><span class="s1">)</span><span class="s0">, False, True</span><span class="s1">)</span>
+
+    <span class="s3"># Check that np.array creates correct contiguous flags:</span>
+    <span class="s1">check_contig(np.array(a</span><span class="s0">, </span><span class="s1">copy=</span><span class="s0">False</span><span class="s1">)</span><span class="s0">, False, False</span><span class="s1">)</span>
+    <span class="s1">check_contig(np.array(a</span><span class="s0">, </span><span class="s1">copy=</span><span class="s0">False, </span><span class="s1">order=</span><span class="s5">'C'</span><span class="s1">)</span><span class="s0">, True, False</span><span class="s1">)</span>
+    <span class="s1">check_contig(np.array(a</span><span class="s0">, </span><span class="s1">ndmin=</span><span class="s2">4</span><span class="s0">, </span><span class="s1">copy=</span><span class="s0">False, </span><span class="s1">order=</span><span class="s5">'F'</span><span class="s1">)</span><span class="s0">, False, True</span><span class="s1">)</span>
+
+    <span class="s3"># Check slicing update of flags and :</span>
+    <span class="s1">check_contig(a[</span><span class="s2">0</span><span class="s1">]</span><span class="s0">, True, True</span><span class="s1">)</span>
+    <span class="s1">check_contig(a[</span><span class="s0">None, </span><span class="s1">::</span><span class="s2">4</span><span class="s0">, </span><span class="s1">...</span><span class="s0">, None</span><span class="s1">]</span><span class="s0">, True, True</span><span class="s1">)</span>
+    <span class="s1">check_contig(b[</span><span class="s2">0</span><span class="s0">, </span><span class="s2">0</span><span class="s0">, </span><span class="s1">...]</span><span class="s0">, False, True</span><span class="s1">)</span>
+    <span class="s1">check_contig(b[:</span><span class="s0">, </span><span class="s1">:</span><span class="s0">, </span><span class="s2">0</span><span class="s1">:</span><span class="s2">0</span><span class="s0">, </span><span class="s1">:</span><span class="s0">, </span><span class="s1">:]</span><span class="s0">, True, True</span><span class="s1">)</span>
+
+    <span class="s3"># Test ravel and squeeze.</span>
+    <span class="s1">check_contig(a.ravel()</span><span class="s0">, True, True</span><span class="s1">)</span>
+    <span class="s1">check_contig(np.ones((</span><span class="s2">1</span><span class="s0">, </span><span class="s2">3</span><span class="s0">, </span><span class="s2">1</span><span class="s1">)).squeeze()</span><span class="s0">, True, True</span><span class="s1">)</span>
+<hr class="ls0"><span class="s0">def </span><span class="s1">test_broadcast_arrays():</span>
+    <span class="s3"># Test user defined dtypes</span>
+    <span class="s1">a = np.array([(</span><span class="s2">1</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s1">)]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'u4,u4,u4'</span><span class="s1">)</span>
+    <span class="s1">b = np.array([(</span><span class="s2">1</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">4</span><span class="s0">, </span><span class="s2">5</span><span class="s0">, </span><span class="s2">6</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">7</span><span class="s0">, </span><span class="s2">8</span><span class="s0">, </span><span class="s2">9</span><span class="s1">)]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'u4,u4,u4'</span><span class="s1">)</span>
+    <span class="s1">result = np.broadcast_arrays(a</span><span class="s0">, </span><span class="s1">b)</span>
+    <span class="s1">assert_equal(result[</span><span class="s2">0</span><span class="s1">]</span><span class="s0">, </span><span class="s1">np.array([(</span><span class="s2">1</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">1</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">1</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s1">)]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'u4,u4,u4'</span><span class="s1">))</span>
+    <span class="s1">assert_equal(result[</span><span class="s2">1</span><span class="s1">]</span><span class="s0">, </span><span class="s1">np.array([(</span><span class="s2">1</span><span class="s0">, </span><span class="s2">2</span><span class="s0">, </span><span class="s2">3</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">4</span><span class="s0">, </span><span class="s2">5</span><span class="s0">, </span><span class="s2">6</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">7</span><span class="s0">, </span><span class="s2">8</span><span class="s0">, </span><span class="s2">9</span><span class="s1">)]</span><span class="s0">, </span><span class="s1">dtype=</span><span class="s5">'u4,u4,u4'</span><span class="s1">))</span>
+<hr class="ls0"><span class="s1">@pytest.mark.parametrize([</span><span class="s5">&quot;shape&quot;</span><span class="s0">, </span><span class="s5">&quot;fill_value&quot;</span><span class="s0">, </span><span class="s5">&quot;expected_output&quot;</span><span class="s1">]</span><span class="s0">,</span>
+        <span class="s1">[((</span><span class="s2">2</span><span class="s0">, </span><span class="s2">2</span><span class="s1">)</span><span class="s0">, </span><span class="s1">[</span><span class="s2">5.0</span><span class="s0">,  </span><span class="s2">6.0</span><span class="s1">]</span><span class="s0">, </span><span class="s1">np.array([[</span><span class="s2">5.0</span><span class="s0">, </span><span class="s2">6.0</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">5.0</span><span class="s0">, </span><span class="s2">6.0</span><span class="s1">]]))</span><span class="s0">,</span>
+         <span class="s1">((</span><span class="s2">3</span><span class="s0">, </span><span class="s2">2</span><span class="s1">)</span><span class="s0">, </span><span class="s1">[</span><span class="s2">1.0</span><span class="s0">,  </span><span class="s2">2.0</span><span class="s1">]</span><span class="s0">, </span><span class="s1">np.array([[</span><span class="s2">1.0</span><span class="s0">, </span><span class="s2">2.0</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">1.0</span><span class="s0">, </span><span class="s2">2.0</span><span class="s1">]</span><span class="s0">, </span><span class="s1">[</span><span class="s2">1.0</span><span class="s0">,  </span><span class="s2">2.0</span><span class="s1">]]))])</span>
+<span class="s0">def </span><span class="s1">test_full_from_list(shape</span><span class="s0">, </span><span class="s1">fill_value</span><span class="s0">, </span><span class="s1">expected_output):</span>
+    <span class="s1">output = np.full(shape</span><span class="s0">, </span><span class="s1">fill_value)</span>
+    <span class="s1">assert_equal(output</span><span class="s0">, </span><span class="s1">expected_output)</span>
+<hr class="ls0"><span class="s0">def </span><span class="s1">test_astype_copyflag():</span>
+    <span class="s3"># test the various copyflag options</span>
+    <span class="s1">arr = np.arange(</span><span class="s2">10</span><span class="s0">, </span><span class="s1">dtype=np.intp)</span>
+
+    <span class="s1">res_true = arr.astype(np.intp</span><span class="s0">, </span><span class="s1">copy=</span><span class="s0">True</span><span class="s1">)</span>
+    <span class="s0">assert not </span><span class="s1">np.may_share_memory(arr</span><span class="s0">, </span><span class="s1">res_true)</span>
+    <span class="s1">res_always = arr.astype(np.intp</span><span class="s0">, </span><span class="s1">copy=np._CopyMode.ALWAYS)</span>
+    <span class="s0">assert not </span><span class="s1">np.may_share_memory(arr</span><span class="s0">, </span><span class="s1">res_always)</span>
+
+    <span class="s1">res_false = arr.astype(np.intp</span><span class="s0">, </span><span class="s1">copy=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s3"># `res_false is arr` currently, but check `may_share_memory`.</span>
+    <span class="s0">assert </span><span class="s1">np.may_share_memory(arr</span><span class="s0">, </span><span class="s1">res_false)</span>
+    <span class="s1">res_if_needed = arr.astype(np.intp</span><span class="s0">, </span><span class="s1">copy=np._CopyMode.IF_NEEDED)</span>
+    <span class="s3"># `res_if_needed is arr` currently, but check `may_share_memory`.</span>
+    <span class="s0">assert </span><span class="s1">np.may_share_memory(arr</span><span class="s0">, </span><span class="s1">res_if_needed)</span>
+
+    <span class="s1">res_never = arr.astype(np.intp</span><span class="s0">, </span><span class="s1">copy=np._CopyMode.NEVER)</span>
+    <span class="s0">assert </span><span class="s1">np.may_share_memory(arr</span><span class="s0">, </span><span class="s1">res_never)</span>
+
+    <span class="s3"># Simple tests for when a copy is necessary:</span>
+    <span class="s1">res_false = arr.astype(np.float64</span><span class="s0">, </span><span class="s1">copy=</span><span class="s0">False</span><span class="s1">)</span>
+    <span class="s1">assert_array_equal(res_false</span><span class="s0">, </span><span class="s1">arr)</span>
+    <span class="s1">res_if_needed = arr.astype(np.float64</span><span class="s0">, </span>
+                               <span class="s1">copy=np._CopyMode.IF_NEEDED)</span>
+    <span class="s1">assert_array_equal(res_if_needed</span><span class="s0">, </span><span class="s1">arr)</span>
+    <span class="s1">assert_raises(ValueError</span><span class="s0">, </span><span class="s1">arr.astype</span><span class="s0">, </span><span class="s1">np.float64</span><span class="s0">,</span>
+                  <span class="s1">copy=np._CopyMode.NEVER)</span>
+</pre>
+</body>
+</html>

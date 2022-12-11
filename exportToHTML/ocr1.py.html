@@ -1,0 +1,93 @@
+<html>
+<head>
+<title>ocr1.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+.s3 { color: #808080;}
+.s4 { color: #6897bb;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+ocr1.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">numpy</span>
+<span class="s0">import </span><span class="s1">cv2</span>
+<span class="s0">import </span><span class="s1">pytesseract</span>
+<span class="s0">from </span><span class="s1">imutils </span><span class="s0">import </span><span class="s1">contours</span>
+<span class="s1">pytesseract.pytesseract.tesseract_cmd = </span><span class="s2">r'C:\Program Files\Tesseract-OCR\tesseract.exe'</span>
+
+
+<span class="s1">image = cv2.imread(</span><span class="s2">&quot;2.jpeg&quot;</span><span class="s1">)</span>
+<span class="s1">print(</span><span class="s2">'image.shape'</span><span class="s0">, </span><span class="s1">image.shape)</span>
+<span class="s1">height</span><span class="s0">, </span><span class="s1">width</span><span class="s0">, </span><span class="s1">_ = image.shape</span>
+<span class="s1">gray = cv2.cvtColor(image</span><span class="s0">, </span><span class="s1">cv2.COLOR_BGR2GRAY)</span>
+<span class="s3"># print(&quot;gray&quot;, gray)</span>
+<span class="s3"># cv2.imshow(&quot;gray&quot;, gray)</span>
+<span class="s3">#значение пикселя, &gt; 0, меняется на 255, а  которое &lt; 215, устанавливается равным нулю.</span>
+<span class="s3"># последний параметр передаёт  пороговое значение: значения пикселей, которые &gt; 0 устанавливаются в максимальное значение, которое передается 3им параметром.</span>
+<span class="s1">thresh = cv2.threshold(gray</span><span class="s0">, </span><span class="s4">0</span><span class="s0">, </span><span class="s4">255</span><span class="s0">, </span><span class="s1">cv2.THRESH_OTSU)[</span><span class="s4">1</span><span class="s1">]</span>
+<span class="s3"># thresh = cv2.threshold(gray, 100, 255, 0)[1]  # 5.jpeg</span>
+<span class="s3"># thresh = cv2.threshold(gray, 170, 255, 0)[1] # 4.png</span>
+<span class="s3"># print(&quot;thresh&quot;, thresh)</span>
+<span class="s3"># cv2.imshow(&quot;thresh&quot;, thresh)</span>
+<span class="s3"># cnts = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)</span>
+<span class="s1">boxes = pytesseract.image_to_boxes(thresh</span><span class="s0">, </span><span class="s1">lang=</span><span class="s2">&quot;eng+rus&quot;</span><span class="s0">, </span><span class="s1">config=</span><span class="s2">'--psm 3'</span><span class="s1">)</span>
+<span class="s1">d = pytesseract.image_to_data(thresh</span><span class="s0">, </span><span class="s1">lang=</span><span class="s2">&quot;eng+rus&quot;</span><span class="s0">, </span><span class="s1">config=</span><span class="s2">'--psm 3'</span><span class="s1">)</span>
+<span class="s1">print(d)</span>
+<span class="s1">lines = d.splitlines()</span>
+<span class="s1">n = </span><span class="s4">0</span>
+<span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range(</span><span class="s4">1</span><span class="s0">, </span><span class="s1">len(lines)):</span>
+    <span class="s0">while </span><span class="s1">n != </span><span class="s4">3</span><span class="s1">:</span>
+        <span class="s0">if </span><span class="s1">len(lines[i].split()) == </span><span class="s4">12 </span><span class="s0">and </span><span class="s1">int(lines[i].split()[</span><span class="s4">7</span><span class="s1">]) &gt; </span><span class="s4">0.5</span><span class="s1">*height:</span>
+            <span class="s1">n += </span><span class="s4">1</span>
+            <span class="s1">print(lines[i].split()[-</span><span class="s4">1</span><span class="s1">])</span>
+        <span class="s0">break</span>
+
+<span class="s3"># for i, d in enumerate(d.splitlines()):</span>
+<span class="s3">#     if i != 0:</span>
+<span class="s3">#         r = d.split()</span>
+<span class="s3">#         j = i</span>
+<span class="s3">#         print(r)</span>
+<span class="s3">#         if len(r) == 12 and 0.5*height &lt; int(r[7]) &lt; 0.75*height:</span>
+<span class="s3">#             x = int(r[6])</span>
+<span class="s3">#             y = int(r[7])</span>
+<span class="s3">#             w = int(r[8])</span>
+<span class="s3">#             h = int(r[9])</span>
+<span class="s3">#             # cv2.rectangle(thresh, (x,y), (x+w,y+h), (0,0,255),1)</span>
+<span class="s3">#             # изображение,верхний левый угол (x1, y1), нижний правый угол (x2, y2), Цвет прямоуг.(GBR/RGB), Толщина линии</span>
+<span class="s3">#             # if 0.5*height &lt; y &lt; 0.75*height:</span>
+<span class="s3">#             print(r[11])</span>
+
+<span class="s0">for </span><span class="s1">box </span><span class="s0">in </span><span class="s1">boxes.splitlines():</span>
+   <span class="s1">box = box.split(</span><span class="s2">&quot; &quot;</span><span class="s1">)</span>
+   <span class="s1">thresh = cv2.rectangle(thresh</span><span class="s0">, </span><span class="s1">(int(box[</span><span class="s4">1</span><span class="s1">])</span><span class="s0">, </span><span class="s1">height - int(box[</span><span class="s4">2</span><span class="s1">]))</span><span class="s0">, </span><span class="s1">(int(box[</span><span class="s4">3</span><span class="s1">])</span><span class="s0">, </span><span class="s1">height - int(box[</span><span class="s4">4</span><span class="s1">]))</span><span class="s0">, </span><span class="s1">(</span><span class="s4">0</span><span class="s0">, </span><span class="s4">0</span><span class="s0">, </span><span class="s4">255</span><span class="s1">)</span><span class="s0">, </span><span class="s4">1</span><span class="s1">)</span>
+<span class="s1">cv2.imshow(</span><span class="s2">'thresh'</span><span class="s0">, </span><span class="s1">thresh)</span>
+<span class="s1">cv2.waitKey()</span>
+<span class="s3"># cnts, _ = contours.sort_contours(cnts[0])</span>
+<span class="s3"># print(cnts)</span>
+
+<span class="s3"># for c in cnts:</span>
+<span class="s3">#     area = cv2.contourArea(c)</span>
+<span class="s3">#     x, y, w, h = cv2.boundingRect(c)</span>
+<span class="s3">#     if y &lt; height / 2:</span>
+<span class="s3">#         # print('c:',c)</span>
+<span class="s3">#         img = image[y:y + h, x:x + w]</span>
+        <span class="s3"># result = pytesseract.image_to_string (img, lang=&quot;eng+rus&quot;, config='--psm 3')</span>
+        <span class="s3"># print(result)</span>
+   <span class="s3"># if area &gt; 1000:</span>
+    <span class="s3">#    img = image[y:y+h, x:x+w]</span>
+     <span class="s3">#   result = pytesseract.image_to_string(img, lang = &quot;eng+rus&quot;, config='--psm 3')</span>
+      <span class="s3">#  print(result)</span>
+<span class="s3">#result = pytesseract.image_to_string(thresh, lang = &quot;rus+eng&quot;, config='--psm 1')</span>
+<span class="s3">#print(result)</span>
+<span class="s3"># cv2.imshow(&quot;Test&quot;, thresh)</span>
+<span class="s1">cv2.waitKey()</span>
+</pre>
+</body>
+</html>

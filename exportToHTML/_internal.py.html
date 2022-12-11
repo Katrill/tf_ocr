@@ -1,0 +1,911 @@
+<html>
+<head>
+<title>_internal.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #629755; font-style: italic;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #6a8759;}
+.s4 { color: #6897bb;}
+.s5 { color: #808080;}
+.ls0 { height: 1px; border-width: 0; color: #4d4d4d; background-color:#4d4d4d}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+_internal.py</font>
+</center></td></tr></table>
+<pre><span class="s0">&quot;&quot;&quot; 
+A place for internal code 
+ 
+Some things are more easily handled Python. 
+ 
+&quot;&quot;&quot;</span>
+<span class="s2">import </span><span class="s1">ast</span>
+<span class="s2">import </span><span class="s1">re</span>
+<span class="s2">import </span><span class="s1">sys</span>
+<span class="s2">import </span><span class="s1">platform</span>
+<span class="s2">import </span><span class="s1">warnings</span>
+
+<span class="s2">from </span><span class="s1">.multiarray </span><span class="s2">import </span><span class="s1">dtype</span><span class="s2">, </span><span class="s1">array</span><span class="s2">, </span><span class="s1">ndarray</span><span class="s2">, </span><span class="s1">promote_types</span>
+<span class="s2">try</span><span class="s1">:</span>
+    <span class="s2">import </span><span class="s1">ctypes</span>
+<span class="s2">except </span><span class="s1">ImportError:</span>
+    <span class="s1">ctypes = </span><span class="s2">None</span>
+
+<span class="s1">IS_PYPY = platform.python_implementation() == </span><span class="s3">'PyPy'</span>
+
+<span class="s2">if </span><span class="s1">sys.byteorder == </span><span class="s3">'little'</span><span class="s1">:</span>
+    <span class="s1">_nbo = </span><span class="s3">'&lt;'</span>
+<span class="s2">else</span><span class="s1">:</span>
+    <span class="s1">_nbo = </span><span class="s3">'&gt;'</span>
+
+<span class="s2">def </span><span class="s1">_makenames_list(adict</span><span class="s2">, </span><span class="s1">align):</span>
+    <span class="s1">allfields = []</span>
+
+    <span class="s2">for </span><span class="s1">fname</span><span class="s2">, </span><span class="s1">obj </span><span class="s2">in </span><span class="s1">adict.items():</span>
+        <span class="s1">n = len(obj)</span>
+        <span class="s2">if not </span><span class="s1">isinstance(obj</span><span class="s2">, </span><span class="s1">tuple) </span><span class="s2">or </span><span class="s1">n </span><span class="s2">not in </span><span class="s1">(</span><span class="s4">2</span><span class="s2">, </span><span class="s4">3</span><span class="s1">):</span>
+            <span class="s2">raise </span><span class="s1">ValueError(</span><span class="s3">&quot;entry not a 2- or 3- tuple&quot;</span><span class="s1">)</span>
+        <span class="s2">if </span><span class="s1">n &gt; </span><span class="s4">2 </span><span class="s2">and </span><span class="s1">obj[</span><span class="s4">2</span><span class="s1">] == fname:</span>
+            <span class="s2">continue</span>
+        <span class="s1">num = int(obj[</span><span class="s4">1</span><span class="s1">])</span>
+        <span class="s2">if </span><span class="s1">num &lt; </span><span class="s4">0</span><span class="s1">:</span>
+            <span class="s2">raise </span><span class="s1">ValueError(</span><span class="s3">&quot;invalid offset.&quot;</span><span class="s1">)</span>
+        <span class="s1">format = dtype(obj[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">, </span><span class="s1">align=align)</span>
+        <span class="s2">if </span><span class="s1">n &gt; </span><span class="s4">2</span><span class="s1">:</span>
+            <span class="s1">title = obj[</span><span class="s4">2</span><span class="s1">]</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">title = </span><span class="s2">None</span>
+        <span class="s1">allfields.append((fname</span><span class="s2">, </span><span class="s1">format</span><span class="s2">, </span><span class="s1">num</span><span class="s2">, </span><span class="s1">title))</span>
+    <span class="s5"># sort by offsets</span>
+    <span class="s1">allfields.sort(key=</span><span class="s2">lambda </span><span class="s1">x: x[</span><span class="s4">2</span><span class="s1">])</span>
+    <span class="s1">names = [x[</span><span class="s4">0</span><span class="s1">] </span><span class="s2">for </span><span class="s1">x </span><span class="s2">in </span><span class="s1">allfields]</span>
+    <span class="s1">formats = [x[</span><span class="s4">1</span><span class="s1">] </span><span class="s2">for </span><span class="s1">x </span><span class="s2">in </span><span class="s1">allfields]</span>
+    <span class="s1">offsets = [x[</span><span class="s4">2</span><span class="s1">] </span><span class="s2">for </span><span class="s1">x </span><span class="s2">in </span><span class="s1">allfields]</span>
+    <span class="s1">titles = [x[</span><span class="s4">3</span><span class="s1">] </span><span class="s2">for </span><span class="s1">x </span><span class="s2">in </span><span class="s1">allfields]</span>
+
+    <span class="s2">return </span><span class="s1">names</span><span class="s2">, </span><span class="s1">formats</span><span class="s2">, </span><span class="s1">offsets</span><span class="s2">, </span><span class="s1">titles</span>
+
+<span class="s5"># Called in PyArray_DescrConverter function when</span>
+<span class="s5">#  a dictionary without &quot;names&quot; and &quot;formats&quot;</span>
+<span class="s5">#  fields is used as a data-type descriptor.</span><hr class="ls0"><span class="s2">def </span><span class="s1">_usefields(adict</span><span class="s2">, </span><span class="s1">align):</span>
+    <span class="s2">try</span><span class="s1">:</span>
+        <span class="s1">names = adict[-</span><span class="s4">1</span><span class="s1">]</span>
+    <span class="s2">except </span><span class="s1">KeyError:</span>
+        <span class="s1">names = </span><span class="s2">None</span>
+    <span class="s2">if </span><span class="s1">names </span><span class="s2">is None</span><span class="s1">:</span>
+        <span class="s1">names</span><span class="s2">, </span><span class="s1">formats</span><span class="s2">, </span><span class="s1">offsets</span><span class="s2">, </span><span class="s1">titles = _makenames_list(adict</span><span class="s2">, </span><span class="s1">align)</span>
+    <span class="s2">else</span><span class="s1">:</span>
+        <span class="s1">formats = []</span>
+        <span class="s1">offsets = []</span>
+        <span class="s1">titles = []</span>
+        <span class="s2">for </span><span class="s1">name </span><span class="s2">in </span><span class="s1">names:</span>
+            <span class="s1">res = adict[name]</span>
+            <span class="s1">formats.append(res[</span><span class="s4">0</span><span class="s1">])</span>
+            <span class="s1">offsets.append(res[</span><span class="s4">1</span><span class="s1">])</span>
+            <span class="s2">if </span><span class="s1">len(res) &gt; </span><span class="s4">2</span><span class="s1">:</span>
+                <span class="s1">titles.append(res[</span><span class="s4">2</span><span class="s1">])</span>
+            <span class="s2">else</span><span class="s1">:</span>
+                <span class="s1">titles.append(</span><span class="s2">None</span><span class="s1">)</span>
+
+    <span class="s2">return </span><span class="s1">dtype({</span><span class="s3">&quot;names&quot;</span><span class="s1">: names</span><span class="s2">,</span>
+                  <span class="s3">&quot;formats&quot;</span><span class="s1">: formats</span><span class="s2">,</span>
+                  <span class="s3">&quot;offsets&quot;</span><span class="s1">: offsets</span><span class="s2">,</span>
+                  <span class="s3">&quot;titles&quot;</span><span class="s1">: titles}</span><span class="s2">, </span><span class="s1">align)</span>
+
+
+<span class="s5"># construct an array_protocol descriptor list</span>
+<span class="s5">#  from the fields attribute of a descriptor</span>
+<span class="s5"># This calls itself recursively but should eventually hit</span>
+<span class="s5">#  a descriptor that has no fields and then return</span>
+<span class="s5">#  a simple typestring</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">_array_descr(descriptor):</span>
+    <span class="s1">fields = descriptor.fields</span>
+    <span class="s2">if </span><span class="s1">fields </span><span class="s2">is None</span><span class="s1">:</span>
+        <span class="s1">subdtype = descriptor.subdtype</span>
+        <span class="s2">if </span><span class="s1">subdtype </span><span class="s2">is None</span><span class="s1">:</span>
+            <span class="s2">if </span><span class="s1">descriptor.metadata </span><span class="s2">is None</span><span class="s1">:</span>
+                <span class="s2">return </span><span class="s1">descriptor.str</span>
+            <span class="s2">else</span><span class="s1">:</span>
+                <span class="s1">new = descriptor.metadata.copy()</span>
+                <span class="s2">if </span><span class="s1">new:</span>
+                    <span class="s2">return </span><span class="s1">(descriptor.str</span><span class="s2">, </span><span class="s1">new)</span>
+                <span class="s2">else</span><span class="s1">:</span>
+                    <span class="s2">return </span><span class="s1">descriptor.str</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s2">return </span><span class="s1">(_array_descr(subdtype[</span><span class="s4">0</span><span class="s1">])</span><span class="s2">, </span><span class="s1">subdtype[</span><span class="s4">1</span><span class="s1">])</span>
+
+    <span class="s1">names = descriptor.names</span>
+    <span class="s1">ordered_fields = [fields[x] + (x</span><span class="s2">,</span><span class="s1">) </span><span class="s2">for </span><span class="s1">x </span><span class="s2">in </span><span class="s1">names]</span>
+    <span class="s1">result = []</span>
+    <span class="s1">offset = </span><span class="s4">0</span>
+    <span class="s2">for </span><span class="s1">field </span><span class="s2">in </span><span class="s1">ordered_fields:</span>
+        <span class="s2">if </span><span class="s1">field[</span><span class="s4">1</span><span class="s1">] &gt; offset:</span>
+            <span class="s1">num = field[</span><span class="s4">1</span><span class="s1">] - offset</span>
+            <span class="s1">result.append((</span><span class="s3">''</span><span class="s2">, </span><span class="s3">f'|V</span><span class="s2">{</span><span class="s1">num</span><span class="s2">}</span><span class="s3">'</span><span class="s1">))</span>
+            <span class="s1">offset += num</span>
+        <span class="s2">elif </span><span class="s1">field[</span><span class="s4">1</span><span class="s1">] &lt; offset:</span>
+            <span class="s2">raise </span><span class="s1">ValueError(</span>
+                <span class="s3">&quot;dtype.descr is not defined for types with overlapping or &quot;</span>
+                <span class="s3">&quot;out-of-order fields&quot;</span><span class="s1">)</span>
+        <span class="s2">if </span><span class="s1">len(field) &gt; </span><span class="s4">3</span><span class="s1">:</span>
+            <span class="s1">name = (field[</span><span class="s4">2</span><span class="s1">]</span><span class="s2">, </span><span class="s1">field[</span><span class="s4">3</span><span class="s1">])</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">name = field[</span><span class="s4">2</span><span class="s1">]</span>
+        <span class="s2">if </span><span class="s1">field[</span><span class="s4">0</span><span class="s1">].subdtype:</span>
+            <span class="s1">tup = (name</span><span class="s2">, </span><span class="s1">_array_descr(field[</span><span class="s4">0</span><span class="s1">].subdtype[</span><span class="s4">0</span><span class="s1">])</span><span class="s2">,</span>
+                   <span class="s1">field[</span><span class="s4">0</span><span class="s1">].subdtype[</span><span class="s4">1</span><span class="s1">])</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">tup = (name</span><span class="s2">, </span><span class="s1">_array_descr(field[</span><span class="s4">0</span><span class="s1">]))</span>
+        <span class="s1">offset += field[</span><span class="s4">0</span><span class="s1">].itemsize</span>
+        <span class="s1">result.append(tup)</span>
+
+    <span class="s2">if </span><span class="s1">descriptor.itemsize &gt; offset:</span>
+        <span class="s1">num = descriptor.itemsize - offset</span>
+        <span class="s1">result.append((</span><span class="s3">''</span><span class="s2">, </span><span class="s3">f'|V</span><span class="s2">{</span><span class="s1">num</span><span class="s2">}</span><span class="s3">'</span><span class="s1">))</span>
+
+    <span class="s2">return </span><span class="s1">result</span>
+
+<span class="s5"># Build a new array from the information in a pickle.</span>
+<span class="s5"># Note that the name numpy.core._internal._reconstruct is embedded in</span>
+<span class="s5"># pickles of ndarrays made with NumPy before release 1.0</span>
+<span class="s5"># so don't remove the name here, or you'll</span>
+<span class="s5"># break backward compatibility.</span><hr class="ls0"><span class="s2">def </span><span class="s1">_reconstruct(subtype</span><span class="s2">, </span><span class="s1">shape</span><span class="s2">, </span><span class="s1">dtype):</span>
+    <span class="s2">return </span><span class="s1">ndarray.__new__(subtype</span><span class="s2">, </span><span class="s1">shape</span><span class="s2">, </span><span class="s1">dtype)</span>
+
+
+<span class="s5"># format_re was originally from numarray by J. Todd Miller</span>
+
+<span class="s1">format_re = re.compile(</span><span class="s3">r'(?P&lt;order1&gt;[&lt;&gt;|=]?)'</span>
+                       <span class="s3">r'(?P&lt;repeats&gt; *[(]?[ ,0-9]*[)]? *)'</span>
+                       <span class="s3">r'(?P&lt;order2&gt;[&lt;&gt;|=]?)'</span>
+                       <span class="s3">r'(?P&lt;dtype&gt;[A-Za-z0-9.?]*(?:\[[a-zA-Z0-9,.]+\])?)'</span><span class="s1">)</span>
+<span class="s1">sep_re = re.compile(</span><span class="s3">r'\s*,\s*'</span><span class="s1">)</span>
+<span class="s1">space_re = re.compile(</span><span class="s3">r'\s+$'</span><span class="s1">)</span>
+
+<span class="s5"># astr is a string (perhaps comma separated)</span>
+
+<span class="s1">_convorder = {</span><span class="s3">'='</span><span class="s1">: _nbo}</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">_commastring(astr):</span>
+    <span class="s1">startindex = </span><span class="s4">0</span>
+    <span class="s1">result = []</span>
+    <span class="s2">while </span><span class="s1">startindex &lt; len(astr):</span>
+        <span class="s1">mo = format_re.match(astr</span><span class="s2">, </span><span class="s1">pos=startindex)</span>
+        <span class="s2">try</span><span class="s1">:</span>
+            <span class="s1">(order1</span><span class="s2">, </span><span class="s1">repeats</span><span class="s2">, </span><span class="s1">order2</span><span class="s2">, </span><span class="s1">dtype) = mo.groups()</span>
+        <span class="s2">except </span><span class="s1">(TypeError</span><span class="s2">, </span><span class="s1">AttributeError):</span>
+            <span class="s2">raise </span><span class="s1">ValueError(</span>
+                <span class="s3">f'format number </span><span class="s2">{</span><span class="s1">len(result)+</span><span class="s4">1</span><span class="s2">} </span><span class="s3">of &quot;</span><span class="s2">{</span><span class="s1">astr</span><span class="s2">}</span><span class="s3">&quot; is not recognized'</span>
+                <span class="s1">) </span><span class="s2">from None</span>
+        <span class="s1">startindex = mo.end()</span>
+        <span class="s5"># Separator or ending padding</span>
+        <span class="s2">if </span><span class="s1">startindex &lt; len(astr):</span>
+            <span class="s2">if </span><span class="s1">space_re.match(astr</span><span class="s2">, </span><span class="s1">pos=startindex):</span>
+                <span class="s1">startindex = len(astr)</span>
+            <span class="s2">else</span><span class="s1">:</span>
+                <span class="s1">mo = sep_re.match(astr</span><span class="s2">, </span><span class="s1">pos=startindex)</span>
+                <span class="s2">if not </span><span class="s1">mo:</span>
+                    <span class="s2">raise </span><span class="s1">ValueError(</span>
+                        <span class="s3">'format number %d of &quot;%s&quot; is not recognized' </span><span class="s1">%</span>
+                        <span class="s1">(len(result)+</span><span class="s4">1</span><span class="s2">, </span><span class="s1">astr))</span>
+                <span class="s1">startindex = mo.end()</span>
+
+        <span class="s2">if </span><span class="s1">order2 == </span><span class="s3">''</span><span class="s1">:</span>
+            <span class="s1">order = order1</span>
+        <span class="s2">elif </span><span class="s1">order1 == </span><span class="s3">''</span><span class="s1">:</span>
+            <span class="s1">order = order2</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">order1 = _convorder.get(order1</span><span class="s2">, </span><span class="s1">order1)</span>
+            <span class="s1">order2 = _convorder.get(order2</span><span class="s2">, </span><span class="s1">order2)</span>
+            <span class="s2">if </span><span class="s1">(order1 != order2):</span>
+                <span class="s2">raise </span><span class="s1">ValueError(</span>
+                    <span class="s3">'inconsistent byte-order specification %s and %s' </span><span class="s1">%</span>
+                    <span class="s1">(order1</span><span class="s2">, </span><span class="s1">order2))</span>
+            <span class="s1">order = order1</span>
+
+        <span class="s2">if </span><span class="s1">order </span><span class="s2">in </span><span class="s1">(</span><span class="s3">'|'</span><span class="s2">, </span><span class="s3">'='</span><span class="s2">, </span><span class="s1">_nbo):</span>
+            <span class="s1">order = </span><span class="s3">''</span>
+        <span class="s1">dtype = order + dtype</span>
+        <span class="s2">if </span><span class="s1">(repeats == </span><span class="s3">''</span><span class="s1">):</span>
+            <span class="s1">newitem = dtype</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">newitem = (dtype</span><span class="s2">, </span><span class="s1">ast.literal_eval(repeats))</span>
+        <span class="s1">result.append(newitem)</span>
+
+    <span class="s2">return </span><span class="s1">result</span>
+<hr class="ls0"><span class="s2">class </span><span class="s1">dummy_ctype:</span>
+    <span class="s2">def </span><span class="s1">__init__(self</span><span class="s2">, </span><span class="s1">cls):</span>
+        <span class="s1">self._cls = cls</span><hr class="ls0">    <span class="s2">def </span><span class="s1">__mul__(self</span><span class="s2">, </span><span class="s1">other):</span>
+        <span class="s2">return </span><span class="s1">self</span><hr class="ls0">    <span class="s2">def </span><span class="s1">__call__(self</span><span class="s2">, </span><span class="s1">*other):</span>
+        <span class="s2">return </span><span class="s1">self._cls(other)</span><hr class="ls0">    <span class="s2">def </span><span class="s1">__eq__(self</span><span class="s2">, </span><span class="s1">other):</span>
+        <span class="s2">return </span><span class="s1">self._cls == other._cls</span><hr class="ls0">    <span class="s2">def </span><span class="s1">__ne__(self</span><span class="s2">, </span><span class="s1">other):</span>
+        <span class="s2">return </span><span class="s1">self._cls != other._cls</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">_getintp_ctype():</span>
+    <span class="s1">val = _getintp_ctype.cache</span>
+    <span class="s2">if </span><span class="s1">val </span><span class="s2">is not None</span><span class="s1">:</span>
+        <span class="s2">return </span><span class="s1">val</span>
+    <span class="s2">if </span><span class="s1">ctypes </span><span class="s2">is None</span><span class="s1">:</span>
+        <span class="s2">import </span><span class="s1">numpy </span><span class="s2">as </span><span class="s1">np</span>
+        <span class="s1">val = dummy_ctype(np.intp)</span>
+    <span class="s2">else</span><span class="s1">:</span>
+        <span class="s1">char = dtype(</span><span class="s3">'p'</span><span class="s1">).char</span>
+        <span class="s2">if </span><span class="s1">char == </span><span class="s3">'i'</span><span class="s1">:</span>
+            <span class="s1">val = ctypes.c_int</span>
+        <span class="s2">elif </span><span class="s1">char == </span><span class="s3">'l'</span><span class="s1">:</span>
+            <span class="s1">val = ctypes.c_long</span>
+        <span class="s2">elif </span><span class="s1">char == </span><span class="s3">'q'</span><span class="s1">:</span>
+            <span class="s1">val = ctypes.c_longlong</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">val = ctypes.c_long</span>
+    <span class="s1">_getintp_ctype.cache = val</span>
+    <span class="s2">return </span><span class="s1">val</span>
+<span class="s1">_getintp_ctype.cache = </span><span class="s2">None</span>
+
+<span class="s5"># Used for .ctypes attribute of ndarray</span>
+<hr class="ls0"><span class="s2">class </span><span class="s1">_missing_ctypes:</span>
+    <span class="s2">def </span><span class="s1">cast(self</span><span class="s2">, </span><span class="s1">num</span><span class="s2">, </span><span class="s1">obj):</span>
+        <span class="s2">return </span><span class="s1">num.value</span>
+
+    <span class="s2">class </span><span class="s1">c_void_p:</span>
+        <span class="s2">def </span><span class="s1">__init__(self</span><span class="s2">, </span><span class="s1">ptr):</span>
+            <span class="s1">self.value = ptr</span>
+
+<hr class="ls0"><span class="s2">class </span><span class="s1">_ctypes:</span>
+    <span class="s2">def </span><span class="s1">__init__(self</span><span class="s2">, </span><span class="s1">array</span><span class="s2">, </span><span class="s1">ptr=</span><span class="s2">None</span><span class="s1">):</span>
+        <span class="s1">self._arr = array</span>
+
+        <span class="s2">if </span><span class="s1">ctypes:</span>
+            <span class="s1">self._ctypes = ctypes</span>
+            <span class="s1">self._data = self._ctypes.c_void_p(ptr)</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s5"># fake a pointer-like object that holds onto the reference</span>
+            <span class="s1">self._ctypes = _missing_ctypes()</span>
+            <span class="s1">self._data = self._ctypes.c_void_p(ptr)</span>
+            <span class="s1">self._data._objects = array</span>
+
+        <span class="s2">if </span><span class="s1">self._arr.ndim == </span><span class="s4">0</span><span class="s1">:</span>
+            <span class="s1">self._zerod = </span><span class="s2">True</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">self._zerod = </span><span class="s2">False</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">data_as(self</span><span class="s2">, </span><span class="s1">obj):</span>
+        <span class="s0">&quot;&quot;&quot; 
+        Return the data pointer cast to a particular c-types object. 
+        For example, calling ``self._as_parameter_`` is equivalent to 
+        ``self.data_as(ctypes.c_void_p)``. Perhaps you want to use the data as a 
+        pointer to a ctypes array of floating-point data: 
+        ``self.data_as(ctypes.POINTER(ctypes.c_double))``. 
+ 
+        The returned pointer will keep a reference to the array. 
+        &quot;&quot;&quot;</span>
+        <span class="s5"># _ctypes.cast function causes a circular reference of self._data in</span>
+        <span class="s5"># self._data._objects. Attributes of self._data cannot be released</span>
+        <span class="s5"># until gc.collect is called. Make a copy of the pointer first then let</span>
+        <span class="s5"># it hold the array reference. This is a workaround to circumvent the</span>
+        <span class="s5"># CPython bug https://bugs.python.org/issue12836</span>
+        <span class="s1">ptr = self._ctypes.cast(self._data</span><span class="s2">, </span><span class="s1">obj)</span>
+        <span class="s1">ptr._arr = self._arr</span>
+        <span class="s2">return </span><span class="s1">ptr</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">shape_as(self</span><span class="s2">, </span><span class="s1">obj):</span>
+        <span class="s0">&quot;&quot;&quot; 
+        Return the shape tuple as an array of some other c-types 
+        type. For example: ``self.shape_as(ctypes.c_short)``. 
+        &quot;&quot;&quot;</span>
+        <span class="s2">if </span><span class="s1">self._zerod:</span>
+            <span class="s2">return None</span>
+        <span class="s2">return </span><span class="s1">(obj*self._arr.ndim)(*self._arr.shape)</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">strides_as(self</span><span class="s2">, </span><span class="s1">obj):</span>
+        <span class="s0">&quot;&quot;&quot; 
+        Return the strides tuple as an array of some other 
+        c-types type. For example: ``self.strides_as(ctypes.c_longlong)``. 
+        &quot;&quot;&quot;</span>
+        <span class="s2">if </span><span class="s1">self._zerod:</span>
+            <span class="s2">return None</span>
+        <span class="s2">return </span><span class="s1">(obj*self._arr.ndim)(*self._arr.strides)</span>
+<hr class="ls0">    <span class="s1">@property</span>
+    <span class="s2">def </span><span class="s1">data(self):</span>
+        <span class="s0">&quot;&quot;&quot; 
+        A pointer to the memory area of the array as a Python integer. 
+        This memory area may contain data that is not aligned, or not in correct 
+        byte-order. The memory area may not even be writeable. The array 
+        flags and data-type of this array should be respected when passing this 
+        attribute to arbitrary C-code to avoid trouble that can include Python 
+        crashing. User Beware! The value of this attribute is exactly the same 
+        as ``self._array_interface_['data'][0]``. 
+ 
+        Note that unlike ``data_as``, a reference will not be kept to the array: 
+        code like ``ctypes.c_void_p((a + b).ctypes.data)`` will result in a 
+        pointer to a deallocated array, and should be spelt 
+        ``(a + b).ctypes.data_as(ctypes.c_void_p)`` 
+        &quot;&quot;&quot;</span>
+        <span class="s2">return </span><span class="s1">self._data.value</span>
+<hr class="ls0">    <span class="s1">@property</span>
+    <span class="s2">def </span><span class="s1">shape(self):</span>
+        <span class="s0">&quot;&quot;&quot; 
+        (c_intp*self.ndim): A ctypes array of length self.ndim where 
+        the basetype is the C-integer corresponding to ``dtype('p')`` on this 
+        platform (see `~numpy.ctypeslib.c_intp`). This base-type could be 
+        `ctypes.c_int`, `ctypes.c_long`, or `ctypes.c_longlong` depending on 
+        the platform. The ctypes array contains the shape of 
+        the underlying array. 
+        &quot;&quot;&quot;</span>
+        <span class="s2">return </span><span class="s1">self.shape_as(_getintp_ctype())</span>
+<hr class="ls0">    <span class="s1">@property</span>
+    <span class="s2">def </span><span class="s1">strides(self):</span>
+        <span class="s0">&quot;&quot;&quot; 
+        (c_intp*self.ndim): A ctypes array of length self.ndim where 
+        the basetype is the same as for the shape attribute. This ctypes array 
+        contains the strides information from the underlying array. This strides 
+        information is important for showing how many bytes must be jumped to 
+        get to the next element in the array. 
+        &quot;&quot;&quot;</span>
+        <span class="s2">return </span><span class="s1">self.strides_as(_getintp_ctype())</span>
+<hr class="ls0">    <span class="s1">@property</span>
+    <span class="s2">def </span><span class="s1">_as_parameter_(self):</span>
+        <span class="s0">&quot;&quot;&quot; 
+        Overrides the ctypes semi-magic method 
+ 
+        Enables `c_func(some_array.ctypes)` 
+        &quot;&quot;&quot;</span>
+        <span class="s2">return </span><span class="s1">self.data_as(ctypes.c_void_p)</span>
+
+    <span class="s5"># Numpy 1.21.0, 2021-05-18</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">get_data(self):</span>
+        <span class="s0">&quot;&quot;&quot;Deprecated getter for the `_ctypes.data` property. 
+ 
+        .. deprecated:: 1.21 
+        &quot;&quot;&quot;</span>
+        <span class="s1">warnings.warn(</span><span class="s3">'&quot;get_data&quot; is deprecated. Use &quot;data&quot; instead'</span><span class="s2">,</span>
+                      <span class="s1">DeprecationWarning</span><span class="s2">, </span><span class="s1">stacklevel=</span><span class="s4">2</span><span class="s1">)</span>
+        <span class="s2">return </span><span class="s1">self.data</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">get_shape(self):</span>
+        <span class="s0">&quot;&quot;&quot;Deprecated getter for the `_ctypes.shape` property. 
+ 
+        .. deprecated:: 1.21 
+        &quot;&quot;&quot;</span>
+        <span class="s1">warnings.warn(</span><span class="s3">'&quot;get_shape&quot; is deprecated. Use &quot;shape&quot; instead'</span><span class="s2">,</span>
+                      <span class="s1">DeprecationWarning</span><span class="s2">, </span><span class="s1">stacklevel=</span><span class="s4">2</span><span class="s1">)</span>
+        <span class="s2">return </span><span class="s1">self.shape</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">get_strides(self):</span>
+        <span class="s0">&quot;&quot;&quot;Deprecated getter for the `_ctypes.strides` property. 
+ 
+        .. deprecated:: 1.21 
+        &quot;&quot;&quot;</span>
+        <span class="s1">warnings.warn(</span><span class="s3">'&quot;get_strides&quot; is deprecated. Use &quot;strides&quot; instead'</span><span class="s2">,</span>
+                      <span class="s1">DeprecationWarning</span><span class="s2">, </span><span class="s1">stacklevel=</span><span class="s4">2</span><span class="s1">)</span>
+        <span class="s2">return </span><span class="s1">self.strides</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">get_as_parameter(self):</span>
+        <span class="s0">&quot;&quot;&quot;Deprecated getter for the `_ctypes._as_parameter_` property. 
+ 
+        .. deprecated:: 1.21 
+        &quot;&quot;&quot;</span>
+        <span class="s1">warnings.warn(</span>
+            <span class="s3">'&quot;get_as_parameter&quot; is deprecated. Use &quot;_as_parameter_&quot; instead'</span><span class="s2">,</span>
+            <span class="s1">DeprecationWarning</span><span class="s2">, </span><span class="s1">stacklevel=</span><span class="s4">2</span><span class="s2">,</span>
+        <span class="s1">)</span>
+        <span class="s2">return </span><span class="s1">self._as_parameter_</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">_newnames(datatype</span><span class="s2">, </span><span class="s1">order):</span>
+    <span class="s0">&quot;&quot;&quot; 
+    Given a datatype and an order object, return a new names tuple, with the 
+    order indicated 
+    &quot;&quot;&quot;</span>
+    <span class="s1">oldnames = datatype.names</span>
+    <span class="s1">nameslist = list(oldnames)</span>
+    <span class="s2">if </span><span class="s1">isinstance(order</span><span class="s2">, </span><span class="s1">str):</span>
+        <span class="s1">order = [order]</span>
+    <span class="s1">seen = set()</span>
+    <span class="s2">if </span><span class="s1">isinstance(order</span><span class="s2">, </span><span class="s1">(list</span><span class="s2">, </span><span class="s1">tuple)):</span>
+        <span class="s2">for </span><span class="s1">name </span><span class="s2">in </span><span class="s1">order:</span>
+            <span class="s2">try</span><span class="s1">:</span>
+                <span class="s1">nameslist.remove(name)</span>
+            <span class="s2">except </span><span class="s1">ValueError:</span>
+                <span class="s2">if </span><span class="s1">name </span><span class="s2">in </span><span class="s1">seen:</span>
+                    <span class="s2">raise </span><span class="s1">ValueError(</span><span class="s3">f&quot;duplicate field name: </span><span class="s2">{</span><span class="s1">name</span><span class="s2">}</span><span class="s3">&quot;</span><span class="s1">) </span><span class="s2">from None</span>
+                <span class="s2">else</span><span class="s1">:</span>
+                    <span class="s2">raise </span><span class="s1">ValueError(</span><span class="s3">f&quot;unknown field name: </span><span class="s2">{</span><span class="s1">name</span><span class="s2">}</span><span class="s3">&quot;</span><span class="s1">) </span><span class="s2">from None</span>
+            <span class="s1">seen.add(name)</span>
+        <span class="s2">return </span><span class="s1">tuple(list(order) + nameslist)</span>
+    <span class="s2">raise </span><span class="s1">ValueError(</span><span class="s3">f&quot;unsupported order value: </span><span class="s2">{</span><span class="s1">order</span><span class="s2">}</span><span class="s3">&quot;</span><span class="s1">)</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">_copy_fields(ary):</span>
+    <span class="s0">&quot;&quot;&quot;Return copy of structured array with padding between fields removed. 
+ 
+    Parameters 
+    ---------- 
+    ary : ndarray 
+       Structured array from which to remove padding bytes 
+ 
+    Returns 
+    ------- 
+    ary_copy : ndarray 
+       Copy of ary with padding bytes removed 
+    &quot;&quot;&quot;</span>
+    <span class="s1">dt = ary.dtype</span>
+    <span class="s1">copy_dtype = {</span><span class="s3">'names'</span><span class="s1">: dt.names</span><span class="s2">,</span>
+                  <span class="s3">'formats'</span><span class="s1">: [dt.fields[name][</span><span class="s4">0</span><span class="s1">] </span><span class="s2">for </span><span class="s1">name </span><span class="s2">in </span><span class="s1">dt.names]}</span>
+    <span class="s2">return </span><span class="s1">array(ary</span><span class="s2">, </span><span class="s1">dtype=copy_dtype</span><span class="s2">, </span><span class="s1">copy=</span><span class="s2">True</span><span class="s1">)</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">_promote_fields(dt1</span><span class="s2">, </span><span class="s1">dt2):</span>
+    <span class="s0">&quot;&quot;&quot; Perform type promotion for two structured dtypes. 
+ 
+    Parameters 
+    ---------- 
+    dt1 : structured dtype 
+        First dtype. 
+    dt2 : structured dtype 
+        Second dtype. 
+ 
+    Returns 
+    ------- 
+    out : dtype 
+        The promoted dtype 
+ 
+    Notes 
+    ----- 
+    If one of the inputs is aligned, the result will be.  The titles of 
+    both descriptors must match (point to the same field). 
+    &quot;&quot;&quot;</span>
+    <span class="s5"># Both must be structured and have the same names in the same order</span>
+    <span class="s2">if </span><span class="s1">(dt1.names </span><span class="s2">is None or </span><span class="s1">dt2.names </span><span class="s2">is None</span><span class="s1">) </span><span class="s2">or </span><span class="s1">dt1.names != dt2.names:</span>
+        <span class="s2">raise </span><span class="s1">TypeError(</span><span class="s3">&quot;invalid type promotion&quot;</span><span class="s1">)</span>
+
+    <span class="s5"># if both are identical, we can (maybe!) just return the same dtype.</span>
+    <span class="s1">identical = dt1 </span><span class="s2">is </span><span class="s1">dt2</span>
+    <span class="s1">new_fields = []</span>
+    <span class="s2">for </span><span class="s1">name </span><span class="s2">in </span><span class="s1">dt1.names:</span>
+        <span class="s1">field1 = dt1.fields[name]</span>
+        <span class="s1">field2 = dt2.fields[name]</span>
+        <span class="s1">new_descr = promote_types(field1[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">, </span><span class="s1">field2[</span><span class="s4">0</span><span class="s1">])</span>
+        <span class="s1">identical = identical </span><span class="s2">and </span><span class="s1">new_descr </span><span class="s2">is </span><span class="s1">field1[</span><span class="s4">0</span><span class="s1">]</span>
+
+        <span class="s5"># Check that the titles match (if given):</span>
+        <span class="s2">if </span><span class="s1">field1[</span><span class="s4">2</span><span class="s1">:] != field2[</span><span class="s4">2</span><span class="s1">:]:</span>
+            <span class="s2">raise </span><span class="s1">TypeError(</span><span class="s3">&quot;invalid type promotion&quot;</span><span class="s1">)</span>
+        <span class="s2">if </span><span class="s1">len(field1) == </span><span class="s4">2</span><span class="s1">:</span>
+            <span class="s1">new_fields.append((name</span><span class="s2">, </span><span class="s1">new_descr))</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">new_fields.append(((field1[</span><span class="s4">2</span><span class="s1">]</span><span class="s2">, </span><span class="s1">name)</span><span class="s2">, </span><span class="s1">new_descr))</span>
+
+    <span class="s1">res = dtype(new_fields</span><span class="s2">, </span><span class="s1">align=dt1.isalignedstruct </span><span class="s2">or </span><span class="s1">dt2.isalignedstruct)</span>
+
+    <span class="s5"># Might as well preserve identity (and metadata) if the dtype is identical</span>
+    <span class="s5"># and the itemsize, offsets are also unmodified.  This could probably be</span>
+    <span class="s5"># sped up, but also probably just be removed entirely.</span>
+    <span class="s2">if </span><span class="s1">identical </span><span class="s2">and </span><span class="s1">res.itemsize == dt1.itemsize:</span>
+        <span class="s2">for </span><span class="s1">name </span><span class="s2">in </span><span class="s1">dt1.names:</span>
+            <span class="s2">if </span><span class="s1">dt1.fields[name][</span><span class="s4">1</span><span class="s1">] != res.fields[name][</span><span class="s4">1</span><span class="s1">]:</span>
+                <span class="s2">return </span><span class="s1">res  </span><span class="s5"># the dtype changed.</span>
+        <span class="s2">return </span><span class="s1">dt1</span>
+
+    <span class="s2">return </span><span class="s1">res</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">_getfield_is_safe(oldtype</span><span class="s2">, </span><span class="s1">newtype</span><span class="s2">, </span><span class="s1">offset):</span>
+    <span class="s0">&quot;&quot;&quot; Checks safety of getfield for object arrays. 
+ 
+    As in _view_is_safe, we need to check that memory containing objects is not 
+    reinterpreted as a non-object datatype and vice versa. 
+ 
+    Parameters 
+    ---------- 
+    oldtype : data-type 
+        Data type of the original ndarray. 
+    newtype : data-type 
+        Data type of the field being accessed by ndarray.getfield 
+    offset : int 
+        Offset of the field being accessed by ndarray.getfield 
+ 
+    Raises 
+    ------ 
+    TypeError 
+        If the field access is invalid 
+ 
+    &quot;&quot;&quot;</span>
+    <span class="s2">if </span><span class="s1">newtype.hasobject </span><span class="s2">or </span><span class="s1">oldtype.hasobject:</span>
+        <span class="s2">if </span><span class="s1">offset == </span><span class="s4">0 </span><span class="s2">and </span><span class="s1">newtype == oldtype:</span>
+            <span class="s2">return</span>
+        <span class="s2">if </span><span class="s1">oldtype.names </span><span class="s2">is not None</span><span class="s1">:</span>
+            <span class="s2">for </span><span class="s1">name </span><span class="s2">in </span><span class="s1">oldtype.names:</span>
+                <span class="s2">if </span><span class="s1">(oldtype.fields[name][</span><span class="s4">1</span><span class="s1">] == offset </span><span class="s2">and</span>
+                        <span class="s1">oldtype.fields[name][</span><span class="s4">0</span><span class="s1">] == newtype):</span>
+                    <span class="s2">return</span>
+        <span class="s2">raise </span><span class="s1">TypeError(</span><span class="s3">&quot;Cannot get/set field of an object array&quot;</span><span class="s1">)</span>
+    <span class="s2">return</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">_view_is_safe(oldtype</span><span class="s2">, </span><span class="s1">newtype):</span>
+    <span class="s0">&quot;&quot;&quot; Checks safety of a view involving object arrays, for example when 
+    doing:: 
+ 
+        np.zeros(10, dtype=oldtype).view(newtype) 
+ 
+    Parameters 
+    ---------- 
+    oldtype : data-type 
+        Data type of original ndarray 
+    newtype : data-type 
+        Data type of the view 
+ 
+    Raises 
+    ------ 
+    TypeError 
+        If the new type is incompatible with the old type. 
+ 
+    &quot;&quot;&quot;</span>
+
+    <span class="s5"># if the types are equivalent, there is no problem.</span>
+    <span class="s5"># for example: dtype((np.record, 'i4,i4')) == dtype((np.void, 'i4,i4'))</span>
+    <span class="s2">if </span><span class="s1">oldtype == newtype:</span>
+        <span class="s2">return</span>
+
+    <span class="s2">if </span><span class="s1">newtype.hasobject </span><span class="s2">or </span><span class="s1">oldtype.hasobject:</span>
+        <span class="s2">raise </span><span class="s1">TypeError(</span><span class="s3">&quot;Cannot change data-type for object array.&quot;</span><span class="s1">)</span>
+    <span class="s2">return</span>
+
+<span class="s5"># Given a string containing a PEP 3118 format specifier,</span>
+<span class="s5"># construct a NumPy dtype</span>
+
+<span class="s1">_pep3118_native_map = {</span>
+    <span class="s3">'?'</span><span class="s1">: </span><span class="s3">'?'</span><span class="s2">,</span>
+    <span class="s3">'c'</span><span class="s1">: </span><span class="s3">'S1'</span><span class="s2">,</span>
+    <span class="s3">'b'</span><span class="s1">: </span><span class="s3">'b'</span><span class="s2">,</span>
+    <span class="s3">'B'</span><span class="s1">: </span><span class="s3">'B'</span><span class="s2">,</span>
+    <span class="s3">'h'</span><span class="s1">: </span><span class="s3">'h'</span><span class="s2">,</span>
+    <span class="s3">'H'</span><span class="s1">: </span><span class="s3">'H'</span><span class="s2">,</span>
+    <span class="s3">'i'</span><span class="s1">: </span><span class="s3">'i'</span><span class="s2">,</span>
+    <span class="s3">'I'</span><span class="s1">: </span><span class="s3">'I'</span><span class="s2">,</span>
+    <span class="s3">'l'</span><span class="s1">: </span><span class="s3">'l'</span><span class="s2">,</span>
+    <span class="s3">'L'</span><span class="s1">: </span><span class="s3">'L'</span><span class="s2">,</span>
+    <span class="s3">'q'</span><span class="s1">: </span><span class="s3">'q'</span><span class="s2">,</span>
+    <span class="s3">'Q'</span><span class="s1">: </span><span class="s3">'Q'</span><span class="s2">,</span>
+    <span class="s3">'e'</span><span class="s1">: </span><span class="s3">'e'</span><span class="s2">,</span>
+    <span class="s3">'f'</span><span class="s1">: </span><span class="s3">'f'</span><span class="s2">,</span>
+    <span class="s3">'d'</span><span class="s1">: </span><span class="s3">'d'</span><span class="s2">,</span>
+    <span class="s3">'g'</span><span class="s1">: </span><span class="s3">'g'</span><span class="s2">,</span>
+    <span class="s3">'Zf'</span><span class="s1">: </span><span class="s3">'F'</span><span class="s2">,</span>
+    <span class="s3">'Zd'</span><span class="s1">: </span><span class="s3">'D'</span><span class="s2">,</span>
+    <span class="s3">'Zg'</span><span class="s1">: </span><span class="s3">'G'</span><span class="s2">,</span>
+    <span class="s3">'s'</span><span class="s1">: </span><span class="s3">'S'</span><span class="s2">,</span>
+    <span class="s3">'w'</span><span class="s1">: </span><span class="s3">'U'</span><span class="s2">,</span>
+    <span class="s3">'O'</span><span class="s1">: </span><span class="s3">'O'</span><span class="s2">,</span>
+    <span class="s3">'x'</span><span class="s1">: </span><span class="s3">'V'</span><span class="s2">,  </span><span class="s5"># padding</span>
+<span class="s1">}</span>
+<span class="s1">_pep3118_native_typechars = </span><span class="s3">''</span><span class="s1">.join(_pep3118_native_map.keys())</span>
+
+<span class="s1">_pep3118_standard_map = {</span>
+    <span class="s3">'?'</span><span class="s1">: </span><span class="s3">'?'</span><span class="s2">,</span>
+    <span class="s3">'c'</span><span class="s1">: </span><span class="s3">'S1'</span><span class="s2">,</span>
+    <span class="s3">'b'</span><span class="s1">: </span><span class="s3">'b'</span><span class="s2">,</span>
+    <span class="s3">'B'</span><span class="s1">: </span><span class="s3">'B'</span><span class="s2">,</span>
+    <span class="s3">'h'</span><span class="s1">: </span><span class="s3">'i2'</span><span class="s2">,</span>
+    <span class="s3">'H'</span><span class="s1">: </span><span class="s3">'u2'</span><span class="s2">,</span>
+    <span class="s3">'i'</span><span class="s1">: </span><span class="s3">'i4'</span><span class="s2">,</span>
+    <span class="s3">'I'</span><span class="s1">: </span><span class="s3">'u4'</span><span class="s2">,</span>
+    <span class="s3">'l'</span><span class="s1">: </span><span class="s3">'i4'</span><span class="s2">,</span>
+    <span class="s3">'L'</span><span class="s1">: </span><span class="s3">'u4'</span><span class="s2">,</span>
+    <span class="s3">'q'</span><span class="s1">: </span><span class="s3">'i8'</span><span class="s2">,</span>
+    <span class="s3">'Q'</span><span class="s1">: </span><span class="s3">'u8'</span><span class="s2">,</span>
+    <span class="s3">'e'</span><span class="s1">: </span><span class="s3">'f2'</span><span class="s2">,</span>
+    <span class="s3">'f'</span><span class="s1">: </span><span class="s3">'f'</span><span class="s2">,</span>
+    <span class="s3">'d'</span><span class="s1">: </span><span class="s3">'d'</span><span class="s2">,</span>
+    <span class="s3">'Zf'</span><span class="s1">: </span><span class="s3">'F'</span><span class="s2">,</span>
+    <span class="s3">'Zd'</span><span class="s1">: </span><span class="s3">'D'</span><span class="s2">,</span>
+    <span class="s3">'s'</span><span class="s1">: </span><span class="s3">'S'</span><span class="s2">,</span>
+    <span class="s3">'w'</span><span class="s1">: </span><span class="s3">'U'</span><span class="s2">,</span>
+    <span class="s3">'O'</span><span class="s1">: </span><span class="s3">'O'</span><span class="s2">,</span>
+    <span class="s3">'x'</span><span class="s1">: </span><span class="s3">'V'</span><span class="s2">,  </span><span class="s5"># padding</span>
+<span class="s1">}</span>
+<span class="s1">_pep3118_standard_typechars = </span><span class="s3">''</span><span class="s1">.join(_pep3118_standard_map.keys())</span>
+
+<span class="s1">_pep3118_unsupported_map = {</span>
+    <span class="s3">'u'</span><span class="s1">: </span><span class="s3">'UCS-2 strings'</span><span class="s2">,</span>
+    <span class="s3">'&amp;'</span><span class="s1">: </span><span class="s3">'pointers'</span><span class="s2">,</span>
+    <span class="s3">'t'</span><span class="s1">: </span><span class="s3">'bitfields'</span><span class="s2">,</span>
+    <span class="s3">'X'</span><span class="s1">: </span><span class="s3">'function pointers'</span><span class="s2">,</span>
+<span class="s1">}</span>
+<hr class="ls0"><span class="s2">class </span><span class="s1">_Stream:</span>
+    <span class="s2">def </span><span class="s1">__init__(self</span><span class="s2">, </span><span class="s1">s):</span>
+        <span class="s1">self.s = s</span>
+        <span class="s1">self.byteorder = </span><span class="s3">'@'</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">advance(self</span><span class="s2">, </span><span class="s1">n):</span>
+        <span class="s1">res = self.s[:n]</span>
+        <span class="s1">self.s = self.s[n:]</span>
+        <span class="s2">return </span><span class="s1">res</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">consume(self</span><span class="s2">, </span><span class="s1">c):</span>
+        <span class="s2">if </span><span class="s1">self.s[:len(c)] == c:</span>
+            <span class="s1">self.advance(len(c))</span>
+            <span class="s2">return True</span>
+        <span class="s2">return False</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">consume_until(self</span><span class="s2">, </span><span class="s1">c):</span>
+        <span class="s2">if </span><span class="s1">callable(c):</span>
+            <span class="s1">i = </span><span class="s4">0</span>
+            <span class="s2">while </span><span class="s1">i &lt; len(self.s) </span><span class="s2">and not </span><span class="s1">c(self.s[i]):</span>
+                <span class="s1">i = i + </span><span class="s4">1</span>
+            <span class="s2">return </span><span class="s1">self.advance(i)</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">i = self.s.index(c)</span>
+            <span class="s1">res = self.advance(i)</span>
+            <span class="s1">self.advance(len(c))</span>
+            <span class="s2">return </span><span class="s1">res</span>
+<hr class="ls0">    <span class="s1">@property</span>
+    <span class="s2">def </span><span class="s1">next(self):</span>
+        <span class="s2">return </span><span class="s1">self.s[</span><span class="s4">0</span><span class="s1">]</span>
+<hr class="ls0">    <span class="s2">def </span><span class="s1">__bool__(self):</span>
+        <span class="s2">return </span><span class="s1">bool(self.s)</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">_dtype_from_pep3118(spec):</span>
+    <span class="s1">stream = _Stream(spec)</span>
+    <span class="s1">dtype</span><span class="s2">, </span><span class="s1">align = __dtype_from_pep3118(stream</span><span class="s2">, </span><span class="s1">is_subdtype=</span><span class="s2">False</span><span class="s1">)</span>
+    <span class="s2">return </span><span class="s1">dtype</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">__dtype_from_pep3118(stream</span><span class="s2">, </span><span class="s1">is_subdtype):</span>
+    <span class="s1">field_spec = dict(</span>
+        <span class="s1">names=[]</span><span class="s2">,</span>
+        <span class="s1">formats=[]</span><span class="s2">,</span>
+        <span class="s1">offsets=[]</span><span class="s2">,</span>
+        <span class="s1">itemsize=</span><span class="s4">0</span>
+    <span class="s1">)</span>
+    <span class="s1">offset = </span><span class="s4">0</span>
+    <span class="s1">common_alignment = </span><span class="s4">1</span>
+    <span class="s1">is_padding = </span><span class="s2">False</span>
+
+    <span class="s5"># Parse spec</span>
+    <span class="s2">while </span><span class="s1">stream:</span>
+        <span class="s1">value = </span><span class="s2">None</span>
+
+        <span class="s5"># End of structure, bail out to upper level</span>
+        <span class="s2">if </span><span class="s1">stream.consume(</span><span class="s3">'}'</span><span class="s1">):</span>
+            <span class="s2">break</span>
+
+        <span class="s5"># Sub-arrays (1)</span>
+        <span class="s1">shape = </span><span class="s2">None</span>
+        <span class="s2">if </span><span class="s1">stream.consume(</span><span class="s3">'('</span><span class="s1">):</span>
+            <span class="s1">shape = stream.consume_until(</span><span class="s3">')'</span><span class="s1">)</span>
+            <span class="s1">shape = tuple(map(int</span><span class="s2">, </span><span class="s1">shape.split(</span><span class="s3">','</span><span class="s1">)))</span>
+
+        <span class="s5"># Byte order</span>
+        <span class="s2">if </span><span class="s1">stream.next </span><span class="s2">in </span><span class="s1">(</span><span class="s3">'@'</span><span class="s2">, </span><span class="s3">'='</span><span class="s2">, </span><span class="s3">'&lt;'</span><span class="s2">, </span><span class="s3">'&gt;'</span><span class="s2">, </span><span class="s3">'^'</span><span class="s2">, </span><span class="s3">'!'</span><span class="s1">):</span>
+            <span class="s1">byteorder = stream.advance(</span><span class="s4">1</span><span class="s1">)</span>
+            <span class="s2">if </span><span class="s1">byteorder == </span><span class="s3">'!'</span><span class="s1">:</span>
+                <span class="s1">byteorder = </span><span class="s3">'&gt;'</span>
+            <span class="s1">stream.byteorder = byteorder</span>
+
+        <span class="s5"># Byte order characters also control native vs. standard type sizes</span>
+        <span class="s2">if </span><span class="s1">stream.byteorder </span><span class="s2">in </span><span class="s1">(</span><span class="s3">'@'</span><span class="s2">, </span><span class="s3">'^'</span><span class="s1">):</span>
+            <span class="s1">type_map = _pep3118_native_map</span>
+            <span class="s1">type_map_chars = _pep3118_native_typechars</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">type_map = _pep3118_standard_map</span>
+            <span class="s1">type_map_chars = _pep3118_standard_typechars</span>
+
+        <span class="s5"># Item sizes</span>
+        <span class="s1">itemsize_str = stream.consume_until(</span><span class="s2">lambda </span><span class="s1">c: </span><span class="s2">not </span><span class="s1">c.isdigit())</span>
+        <span class="s2">if </span><span class="s1">itemsize_str:</span>
+            <span class="s1">itemsize = int(itemsize_str)</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">itemsize = </span><span class="s4">1</span>
+
+        <span class="s5"># Data types</span>
+        <span class="s1">is_padding = </span><span class="s2">False</span>
+
+        <span class="s2">if </span><span class="s1">stream.consume(</span><span class="s3">'T{'</span><span class="s1">):</span>
+            <span class="s1">value</span><span class="s2">, </span><span class="s1">align = __dtype_from_pep3118(</span>
+                <span class="s1">stream</span><span class="s2">, </span><span class="s1">is_subdtype=</span><span class="s2">True</span><span class="s1">)</span>
+        <span class="s2">elif </span><span class="s1">stream.next </span><span class="s2">in </span><span class="s1">type_map_chars:</span>
+            <span class="s2">if </span><span class="s1">stream.next == </span><span class="s3">'Z'</span><span class="s1">:</span>
+                <span class="s1">typechar = stream.advance(</span><span class="s4">2</span><span class="s1">)</span>
+            <span class="s2">else</span><span class="s1">:</span>
+                <span class="s1">typechar = stream.advance(</span><span class="s4">1</span><span class="s1">)</span>
+
+            <span class="s1">is_padding = (typechar == </span><span class="s3">'x'</span><span class="s1">)</span>
+            <span class="s1">dtypechar = type_map[typechar]</span>
+            <span class="s2">if </span><span class="s1">dtypechar </span><span class="s2">in </span><span class="s3">'USV'</span><span class="s1">:</span>
+                <span class="s1">dtypechar += </span><span class="s3">'%d' </span><span class="s1">% itemsize</span>
+                <span class="s1">itemsize = </span><span class="s4">1</span>
+            <span class="s1">numpy_byteorder = {</span><span class="s3">'@'</span><span class="s1">: </span><span class="s3">'='</span><span class="s2">, </span><span class="s3">'^'</span><span class="s1">: </span><span class="s3">'='</span><span class="s1">}.get(</span>
+                <span class="s1">stream.byteorder</span><span class="s2">, </span><span class="s1">stream.byteorder)</span>
+            <span class="s1">value = dtype(numpy_byteorder + dtypechar)</span>
+            <span class="s1">align = value.alignment</span>
+        <span class="s2">elif </span><span class="s1">stream.next </span><span class="s2">in </span><span class="s1">_pep3118_unsupported_map:</span>
+            <span class="s1">desc = _pep3118_unsupported_map[stream.next]</span>
+            <span class="s2">raise </span><span class="s1">NotImplementedError(</span>
+                <span class="s3">&quot;Unrepresentable PEP 3118 data type {!r} ({})&quot;</span>
+                <span class="s1">.format(stream.next</span><span class="s2">, </span><span class="s1">desc))</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s2">raise </span><span class="s1">ValueError(</span><span class="s3">&quot;Unknown PEP 3118 data type specifier %r&quot; </span><span class="s1">% stream.s)</span>
+
+        <span class="s5">#</span>
+        <span class="s5"># Native alignment may require padding</span>
+        <span class="s5">#</span>
+        <span class="s5"># Here we assume that the presence of a '@' character implicitly implies</span>
+        <span class="s5"># that the start of the array is *already* aligned.</span>
+        <span class="s5">#</span>
+        <span class="s1">extra_offset = </span><span class="s4">0</span>
+        <span class="s2">if </span><span class="s1">stream.byteorder == </span><span class="s3">'@'</span><span class="s1">:</span>
+            <span class="s1">start_padding = (-offset) % align</span>
+            <span class="s1">intra_padding = (-value.itemsize) % align</span>
+
+            <span class="s1">offset += start_padding</span>
+
+            <span class="s2">if </span><span class="s1">intra_padding != </span><span class="s4">0</span><span class="s1">:</span>
+                <span class="s2">if </span><span class="s1">itemsize &gt; </span><span class="s4">1 </span><span class="s2">or </span><span class="s1">(shape </span><span class="s2">is not None and </span><span class="s1">_prod(shape) &gt; </span><span class="s4">1</span><span class="s1">):</span>
+                    <span class="s5"># Inject internal padding to the end of the sub-item</span>
+                    <span class="s1">value = _add_trailing_padding(value</span><span class="s2">, </span><span class="s1">intra_padding)</span>
+                <span class="s2">else</span><span class="s1">:</span>
+                    <span class="s5"># We can postpone the injection of internal padding,</span>
+                    <span class="s5"># as the item appears at most once</span>
+                    <span class="s1">extra_offset += intra_padding</span>
+
+            <span class="s5"># Update common alignment</span>
+            <span class="s1">common_alignment = _lcm(align</span><span class="s2">, </span><span class="s1">common_alignment)</span>
+
+        <span class="s5"># Convert itemsize to sub-array</span>
+        <span class="s2">if </span><span class="s1">itemsize != </span><span class="s4">1</span><span class="s1">:</span>
+            <span class="s1">value = dtype((value</span><span class="s2">, </span><span class="s1">(itemsize</span><span class="s2">,</span><span class="s1">)))</span>
+
+        <span class="s5"># Sub-arrays (2)</span>
+        <span class="s2">if </span><span class="s1">shape </span><span class="s2">is not None</span><span class="s1">:</span>
+            <span class="s1">value = dtype((value</span><span class="s2">, </span><span class="s1">shape))</span>
+
+        <span class="s5"># Field name</span>
+        <span class="s2">if </span><span class="s1">stream.consume(</span><span class="s3">':'</span><span class="s1">):</span>
+            <span class="s1">name = stream.consume_until(</span><span class="s3">':'</span><span class="s1">)</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">name = </span><span class="s2">None</span>
+
+        <span class="s2">if not </span><span class="s1">(is_padding </span><span class="s2">and </span><span class="s1">name </span><span class="s2">is None</span><span class="s1">):</span>
+            <span class="s2">if </span><span class="s1">name </span><span class="s2">is not None and </span><span class="s1">name </span><span class="s2">in </span><span class="s1">field_spec[</span><span class="s3">'names'</span><span class="s1">]:</span>
+                <span class="s2">raise </span><span class="s1">RuntimeError(</span><span class="s3">f&quot;Duplicate field name '</span><span class="s2">{</span><span class="s1">name</span><span class="s2">}</span><span class="s3">' in PEP3118 format&quot;</span><span class="s1">)</span>
+            <span class="s1">field_spec[</span><span class="s3">'names'</span><span class="s1">].append(name)</span>
+            <span class="s1">field_spec[</span><span class="s3">'formats'</span><span class="s1">].append(value)</span>
+            <span class="s1">field_spec[</span><span class="s3">'offsets'</span><span class="s1">].append(offset)</span>
+
+        <span class="s1">offset += value.itemsize</span>
+        <span class="s1">offset += extra_offset</span>
+
+        <span class="s1">field_spec[</span><span class="s3">'itemsize'</span><span class="s1">] = offset</span>
+
+    <span class="s5"># extra final padding for aligned types</span>
+    <span class="s2">if </span><span class="s1">stream.byteorder == </span><span class="s3">'@'</span><span class="s1">:</span>
+        <span class="s1">field_spec[</span><span class="s3">'itemsize'</span><span class="s1">] += (-offset) % common_alignment</span>
+
+    <span class="s5"># Check if this was a simple 1-item type, and unwrap it</span>
+    <span class="s2">if </span><span class="s1">(field_spec[</span><span class="s3">'names'</span><span class="s1">] == [</span><span class="s2">None</span><span class="s1">]</span>
+            <span class="s2">and </span><span class="s1">field_spec[</span><span class="s3">'offsets'</span><span class="s1">][</span><span class="s4">0</span><span class="s1">] == </span><span class="s4">0</span>
+            <span class="s2">and </span><span class="s1">field_spec[</span><span class="s3">'itemsize'</span><span class="s1">] == field_spec[</span><span class="s3">'formats'</span><span class="s1">][</span><span class="s4">0</span><span class="s1">].itemsize</span>
+            <span class="s2">and not </span><span class="s1">is_subdtype):</span>
+        <span class="s1">ret = field_spec[</span><span class="s3">'formats'</span><span class="s1">][</span><span class="s4">0</span><span class="s1">]</span>
+    <span class="s2">else</span><span class="s1">:</span>
+        <span class="s1">_fix_names(field_spec)</span>
+        <span class="s1">ret = dtype(field_spec)</span>
+
+    <span class="s5"># Finished</span>
+    <span class="s2">return </span><span class="s1">ret</span><span class="s2">, </span><span class="s1">common_alignment</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">_fix_names(field_spec):</span>
+    <span class="s0">&quot;&quot;&quot; Replace names which are None with the next unused f%d name &quot;&quot;&quot;</span>
+    <span class="s1">names = field_spec[</span><span class="s3">'names'</span><span class="s1">]</span>
+    <span class="s2">for </span><span class="s1">i</span><span class="s2">, </span><span class="s1">name </span><span class="s2">in </span><span class="s1">enumerate(names):</span>
+        <span class="s2">if </span><span class="s1">name </span><span class="s2">is not None</span><span class="s1">:</span>
+            <span class="s2">continue</span>
+
+        <span class="s1">j = </span><span class="s4">0</span>
+        <span class="s2">while True</span><span class="s1">:</span>
+            <span class="s1">name = </span><span class="s3">f'f</span><span class="s2">{</span><span class="s1">j</span><span class="s2">}</span><span class="s3">'</span>
+            <span class="s2">if </span><span class="s1">name </span><span class="s2">not in </span><span class="s1">names:</span>
+                <span class="s2">break</span>
+            <span class="s1">j = j + </span><span class="s4">1</span>
+        <span class="s1">names[i] = name</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">_add_trailing_padding(value</span><span class="s2">, </span><span class="s1">padding):</span>
+    <span class="s0">&quot;&quot;&quot;Inject the specified number of padding bytes at the end of a dtype&quot;&quot;&quot;</span>
+    <span class="s2">if </span><span class="s1">value.fields </span><span class="s2">is None</span><span class="s1">:</span>
+        <span class="s1">field_spec = dict(</span>
+            <span class="s1">names=[</span><span class="s3">'f0'</span><span class="s1">]</span><span class="s2">,</span>
+            <span class="s1">formats=[value]</span><span class="s2">,</span>
+            <span class="s1">offsets=[</span><span class="s4">0</span><span class="s1">]</span><span class="s2">,</span>
+            <span class="s1">itemsize=value.itemsize</span>
+        <span class="s1">)</span>
+    <span class="s2">else</span><span class="s1">:</span>
+        <span class="s1">fields = value.fields</span>
+        <span class="s1">names = value.names</span>
+        <span class="s1">field_spec = dict(</span>
+            <span class="s1">names=names</span><span class="s2">,</span>
+            <span class="s1">formats=[fields[name][</span><span class="s4">0</span><span class="s1">] </span><span class="s2">for </span><span class="s1">name </span><span class="s2">in </span><span class="s1">names]</span><span class="s2">,</span>
+            <span class="s1">offsets=[fields[name][</span><span class="s4">1</span><span class="s1">] </span><span class="s2">for </span><span class="s1">name </span><span class="s2">in </span><span class="s1">names]</span><span class="s2">,</span>
+            <span class="s1">itemsize=value.itemsize</span>
+        <span class="s1">)</span>
+
+    <span class="s1">field_spec[</span><span class="s3">'itemsize'</span><span class="s1">] += padding</span>
+    <span class="s2">return </span><span class="s1">dtype(field_spec)</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">_prod(a):</span>
+    <span class="s1">p = </span><span class="s4">1</span>
+    <span class="s2">for </span><span class="s1">x </span><span class="s2">in </span><span class="s1">a:</span>
+        <span class="s1">p *= x</span>
+    <span class="s2">return </span><span class="s1">p</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">_gcd(a</span><span class="s2">, </span><span class="s1">b):</span>
+    <span class="s0">&quot;&quot;&quot;Calculate the greatest common divisor of a and b&quot;&quot;&quot;</span>
+    <span class="s2">while </span><span class="s1">b:</span>
+        <span class="s1">a</span><span class="s2">, </span><span class="s1">b = b</span><span class="s2">, </span><span class="s1">a % b</span>
+    <span class="s2">return </span><span class="s1">a</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">_lcm(a</span><span class="s2">, </span><span class="s1">b):</span>
+    <span class="s2">return </span><span class="s1">a // _gcd(a</span><span class="s2">, </span><span class="s1">b) * b</span>
+<hr class="ls0"><span class="s2">def </span><span class="s1">array_ufunc_errmsg_formatter(dummy</span><span class="s2">, </span><span class="s1">ufunc</span><span class="s2">, </span><span class="s1">method</span><span class="s2">, </span><span class="s1">*inputs</span><span class="s2">, </span><span class="s1">**kwargs):</span>
+    <span class="s0">&quot;&quot;&quot; Format the error message for when __array_ufunc__ gives up. &quot;&quot;&quot;</span>
+    <span class="s1">args_string = </span><span class="s3">', '</span><span class="s1">.join([</span><span class="s3">'{!r}'</span><span class="s1">.format(arg) </span><span class="s2">for </span><span class="s1">arg </span><span class="s2">in </span><span class="s1">inputs] +</span>
+                            <span class="s1">[</span><span class="s3">'{}={!r}'</span><span class="s1">.format(k</span><span class="s2">, </span><span class="s1">v)</span>
+                             <span class="s2">for </span><span class="s1">k</span><span class="s2">, </span><span class="s1">v </span><span class="s2">in </span><span class="s1">kwargs.items()])</span>
+    <span class="s1">args = inputs + kwargs.get(</span><span class="s3">'out'</span><span class="s2">, </span><span class="s1">())</span>
+    <span class="s1">types_string = </span><span class="s3">', '</span><span class="s1">.join(repr(type(arg).__name__) </span><span class="s2">for </span><span class="s1">arg </span><span class="s2">in </span><span class="s1">args)</span>
+    <span class="s2">return </span><span class="s1">(</span><span class="s3">'operand type(s) all returned NotImplemented from '</span>
+            <span class="s3">'__array_ufunc__({!r}, {!r}, {}): {}'</span>
+            <span class="s1">.format(ufunc</span><span class="s2">, </span><span class="s1">method</span><span class="s2">, </span><span class="s1">args_string</span><span class="s2">, </span><span class="s1">types_string))</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">array_function_errmsg_formatter(public_api</span><span class="s2">, </span><span class="s1">types):</span>
+    <span class="s0">&quot;&quot;&quot; Format the error message for when __array_ufunc__ gives up. &quot;&quot;&quot;</span>
+    <span class="s1">func_name = </span><span class="s3">'{}.{}'</span><span class="s1">.format(public_api.__module__</span><span class="s2">, </span><span class="s1">public_api.__name__)</span>
+    <span class="s2">return </span><span class="s1">(</span><span class="s3">&quot;no implementation found for '{}' on types that implement &quot;</span>
+            <span class="s3">'__array_function__: {}'</span><span class="s1">.format(func_name</span><span class="s2">, </span><span class="s1">list(types)))</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">_ufunc_doc_signature_formatter(ufunc):</span>
+    <span class="s0">&quot;&quot;&quot; 
+    Builds a signature string which resembles PEP 457 
+ 
+    This is used to construct the first line of the docstring 
+    &quot;&quot;&quot;</span>
+
+    <span class="s5"># input arguments are simple</span>
+    <span class="s2">if </span><span class="s1">ufunc.nin == </span><span class="s4">1</span><span class="s1">:</span>
+        <span class="s1">in_args = </span><span class="s3">'x'</span>
+    <span class="s2">else</span><span class="s1">:</span>
+        <span class="s1">in_args = </span><span class="s3">', '</span><span class="s1">.join(</span><span class="s3">f'x</span><span class="s2">{</span><span class="s1">i+</span><span class="s4">1</span><span class="s2">}</span><span class="s3">' </span><span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(ufunc.nin))</span>
+
+    <span class="s5"># output arguments are both keyword or positional</span>
+    <span class="s2">if </span><span class="s1">ufunc.nout == </span><span class="s4">0</span><span class="s1">:</span>
+        <span class="s1">out_args = </span><span class="s3">', /, out=()'</span>
+    <span class="s2">elif </span><span class="s1">ufunc.nout == </span><span class="s4">1</span><span class="s1">:</span>
+        <span class="s1">out_args = </span><span class="s3">', /, out=None'</span>
+    <span class="s2">else</span><span class="s1">:</span>
+        <span class="s1">out_args = </span><span class="s3">'[, {positional}], / [, out={default}]'</span><span class="s1">.format(</span>
+            <span class="s1">positional=</span><span class="s3">', '</span><span class="s1">.join(</span>
+                <span class="s3">'out{}'</span><span class="s1">.format(i+</span><span class="s4">1</span><span class="s1">) </span><span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(ufunc.nout))</span><span class="s2">,</span>
+            <span class="s1">default=repr((</span><span class="s2">None,</span><span class="s1">)*ufunc.nout)</span>
+        <span class="s1">)</span>
+
+    <span class="s5"># keyword only args depend on whether this is a gufunc</span>
+    <span class="s1">kwargs = (</span>
+        <span class="s3">&quot;, casting='same_kind'&quot;</span>
+        <span class="s3">&quot;, order='K'&quot;</span>
+        <span class="s3">&quot;, dtype=None&quot;</span>
+        <span class="s3">&quot;, subok=True&quot;</span>
+    <span class="s1">)</span>
+
+    <span class="s5"># NOTE: gufuncs may or may not support the `axis` parameter</span>
+    <span class="s2">if </span><span class="s1">ufunc.signature </span><span class="s2">is None</span><span class="s1">:</span>
+        <span class="s1">kwargs = </span><span class="s3">f&quot;, where=True</span><span class="s2">{</span><span class="s1">kwargs</span><span class="s2">}</span><span class="s3">[, signature, extobj]&quot;</span>
+    <span class="s2">else</span><span class="s1">:</span>
+        <span class="s1">kwargs += </span><span class="s3">&quot;[, signature, extobj, axes, axis]&quot;</span>
+
+    <span class="s5"># join all the parts together</span>
+    <span class="s2">return </span><span class="s3">'{name}({in_args}{out_args}, *{kwargs})'</span><span class="s1">.format(</span>
+        <span class="s1">name=ufunc.__name__</span><span class="s2">,</span>
+        <span class="s1">in_args=in_args</span><span class="s2">,</span>
+        <span class="s1">out_args=out_args</span><span class="s2">,</span>
+        <span class="s1">kwargs=kwargs</span>
+    <span class="s1">)</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">npy_ctypes_check(cls):</span>
+    <span class="s5"># determine if a class comes from ctypes, in order to work around</span>
+    <span class="s5"># a bug in the buffer protocol for those objects, bpo-10746</span>
+    <span class="s2">try</span><span class="s1">:</span>
+        <span class="s5"># ctypes class are new-style, so have an __mro__. This probably fails</span>
+        <span class="s5"># for ctypes classes with multiple inheritance.</span>
+        <span class="s2">if </span><span class="s1">IS_PYPY:</span>
+            <span class="s5"># (..., _ctypes.basics._CData, Bufferable, object)</span>
+            <span class="s1">ctype_base = cls.__mro__[-</span><span class="s4">3</span><span class="s1">]</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s5"># # (..., _ctypes._CData, object)</span>
+            <span class="s1">ctype_base = cls.__mro__[-</span><span class="s4">2</span><span class="s1">]</span>
+        <span class="s5"># right now, they're part of the _ctypes module</span>
+        <span class="s2">return </span><span class="s3">'_ctypes' </span><span class="s2">in </span><span class="s1">ctype_base.__module__</span>
+    <span class="s2">except </span><span class="s1">Exception:</span>
+        <span class="s2">return False</span>
+</pre>
+</body>
+</html>

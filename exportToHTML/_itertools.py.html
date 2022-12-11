@@ -1,0 +1,56 @@
+<html>
+<head>
+<title>_itertools.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #808080;}
+.s3 { color: #6a8759;}
+.s4 { color: #629755; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+_itertools.py</font>
+</center></td></tr></table>
+<pre><span class="s0">from </span><span class="s1">itertools </span><span class="s0">import </span><span class="s1">filterfalse</span>
+
+<span class="s0">from </span><span class="s1">typing </span><span class="s0">import </span><span class="s1">(</span>
+    <span class="s1">Callable</span><span class="s0">,</span>
+    <span class="s1">Iterable</span><span class="s0">,</span>
+    <span class="s1">Iterator</span><span class="s0">,</span>
+    <span class="s1">Optional</span><span class="s0">,</span>
+    <span class="s1">Set</span><span class="s0">,</span>
+    <span class="s1">TypeVar</span><span class="s0">,</span>
+    <span class="s1">Union</span><span class="s0">,</span>
+<span class="s1">)</span>
+
+<span class="s2"># Type and type variable definitions</span>
+<span class="s1">_T = TypeVar(</span><span class="s3">'_T'</span><span class="s1">)</span>
+<span class="s1">_U = TypeVar(</span><span class="s3">'_U'</span><span class="s1">)</span>
+
+
+<span class="s0">def </span><span class="s1">unique_everseen(</span>
+    <span class="s1">iterable: Iterable[_T]</span><span class="s0">, </span><span class="s1">key: Optional[Callable[[_T]</span><span class="s0">, </span><span class="s1">_U]] = </span><span class="s0">None</span>
+<span class="s1">) -&gt; Iterator[_T]:</span>
+    <span class="s4">&quot;List unique elements, preserving order. Remember all elements ever seen.&quot;</span>
+    <span class="s2"># unique_everseen('AAAABBBCCDAABBB') --&gt; A B C D</span>
+    <span class="s2"># unique_everseen('ABBCcAD', str.lower) --&gt; A B C D</span>
+    <span class="s1">seen: Set[Union[_T</span><span class="s0">, </span><span class="s1">_U]] = set()</span>
+    <span class="s1">seen_add = seen.add</span>
+    <span class="s0">if </span><span class="s1">key </span><span class="s0">is None</span><span class="s1">:</span>
+        <span class="s0">for </span><span class="s1">element </span><span class="s0">in </span><span class="s1">filterfalse(seen.__contains__</span><span class="s0">, </span><span class="s1">iterable):</span>
+            <span class="s1">seen_add(element)</span>
+            <span class="s0">yield </span><span class="s1">element</span>
+    <span class="s0">else</span><span class="s1">:</span>
+        <span class="s0">for </span><span class="s1">element </span><span class="s0">in </span><span class="s1">iterable:</span>
+            <span class="s1">k = key(element)</span>
+            <span class="s0">if </span><span class="s1">k </span><span class="s0">not in </span><span class="s1">seen:</span>
+                <span class="s1">seen_add(k)</span>
+                <span class="s0">yield </span><span class="s1">element</span>
+</pre>
+</body>
+</html>

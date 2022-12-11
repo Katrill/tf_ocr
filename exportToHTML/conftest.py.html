@@ -1,0 +1,135 @@
+<html>
+<head>
+<title>conftest.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #629755; font-style: italic;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #808080;}
+.s4 { color: #6a8759;}
+.ls0 { height: 1px; border-width: 0; color: #4d4d4d; background-color:#4d4d4d}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+conftest.py</font>
+</center></td></tr></table>
+<pre><span class="s0">&quot;&quot;&quot; 
+Pytest configuration and fixtures for the Numpy test suite. 
+&quot;&quot;&quot;</span>
+<span class="s2">import </span><span class="s1">os</span>
+<span class="s2">import </span><span class="s1">tempfile</span>
+
+<span class="s2">import </span><span class="s1">hypothesis</span>
+<span class="s2">import </span><span class="s1">pytest</span>
+<span class="s2">import </span><span class="s1">numpy</span>
+
+<span class="s2">from </span><span class="s1">numpy.core._multiarray_tests </span><span class="s2">import </span><span class="s1">get_fpu_mode</span>
+
+
+<span class="s1">_old_fpu_mode = </span><span class="s2">None</span>
+<span class="s1">_collect_results = {}</span>
+
+<span class="s3"># Use a known and persistent tmpdir for hypothesis' caches, which</span>
+<span class="s3"># can be automatically cleared by the OS or user.</span>
+<span class="s1">hypothesis.configuration.set_hypothesis_home_dir(</span>
+    <span class="s1">os.path.join(tempfile.gettempdir()</span><span class="s2">, </span><span class="s4">&quot;.hypothesis&quot;</span><span class="s1">)</span>
+<span class="s1">)</span>
+
+<span class="s3"># We register two custom profiles for Numpy - for details see</span>
+<span class="s3"># https://hypothesis.readthedocs.io/en/latest/settings.html</span>
+<span class="s3"># The first is designed for our own CI runs; the latter also </span>
+<span class="s3"># forces determinism and is designed for use via np.test()</span>
+<span class="s1">hypothesis.settings.register_profile(</span>
+    <span class="s1">name=</span><span class="s4">&quot;numpy-profile&quot;</span><span class="s2">, </span><span class="s1">deadline=</span><span class="s2">None, </span><span class="s1">print_blob=</span><span class="s2">True,</span>
+<span class="s1">)</span>
+<span class="s1">hypothesis.settings.register_profile(</span>
+    <span class="s1">name=</span><span class="s4">&quot;np.test() profile&quot;</span><span class="s2">,</span>
+    <span class="s1">deadline=</span><span class="s2">None, </span><span class="s1">print_blob=</span><span class="s2">True, </span><span class="s1">database=</span><span class="s2">None, </span><span class="s1">derandomize=</span><span class="s2">True,</span>
+    <span class="s1">suppress_health_check=hypothesis.HealthCheck.all()</span><span class="s2">,</span>
+<span class="s1">)</span>
+<span class="s3"># Note that the default profile is chosen based on the presence </span>
+<span class="s3"># of pytest.ini, but can be overridden by passing the </span>
+<span class="s3"># --hypothesis-profile=NAME argument to pytest.</span>
+<span class="s1">_pytest_ini = os.path.join(os.path.dirname(__file__)</span><span class="s2">, </span><span class="s4">&quot;..&quot;</span><span class="s2">, </span><span class="s4">&quot;pytest.ini&quot;</span><span class="s1">)</span>
+<span class="s1">hypothesis.settings.load_profile(</span>
+    <span class="s4">&quot;numpy-profile&quot; </span><span class="s2">if </span><span class="s1">os.path.isfile(_pytest_ini) </span><span class="s2">else </span><span class="s4">&quot;np.test() profile&quot;</span>
+<span class="s1">)</span>
+
+
+<span class="s2">def </span><span class="s1">pytest_configure(config):</span>
+    <span class="s1">config.addinivalue_line(</span><span class="s4">&quot;markers&quot;</span><span class="s2">,</span>
+        <span class="s4">&quot;valgrind_error: Tests that are known to error under valgrind.&quot;</span><span class="s1">)</span>
+    <span class="s1">config.addinivalue_line(</span><span class="s4">&quot;markers&quot;</span><span class="s2">,</span>
+        <span class="s4">&quot;leaks_references: Tests that are known to leak references.&quot;</span><span class="s1">)</span>
+    <span class="s1">config.addinivalue_line(</span><span class="s4">&quot;markers&quot;</span><span class="s2">,</span>
+        <span class="s4">&quot;slow: Tests that are very slow.&quot;</span><span class="s1">)</span>
+    <span class="s1">config.addinivalue_line(</span><span class="s4">&quot;markers&quot;</span><span class="s2">,</span>
+        <span class="s4">&quot;slow_pypy: Tests that are very slow on pypy.&quot;</span><span class="s1">)</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">pytest_addoption(parser):</span>
+    <span class="s1">parser.addoption(</span><span class="s4">&quot;--available-memory&quot;</span><span class="s2">, </span><span class="s1">action=</span><span class="s4">&quot;store&quot;</span><span class="s2">, </span><span class="s1">default=</span><span class="s2">None,</span>
+                     <span class="s1">help=(</span><span class="s4">&quot;Set amount of memory available for running the &quot;</span>
+                           <span class="s4">&quot;test suite. This can result to tests requiring &quot;</span>
+                           <span class="s4">&quot;especially large amounts of memory to be skipped. &quot;</span>
+                           <span class="s4">&quot;Equivalent to setting environment variable &quot;</span>
+                           <span class="s4">&quot;NPY_AVAILABLE_MEM. Default: determined&quot;</span>
+                           <span class="s4">&quot;automatically.&quot;</span><span class="s1">))</span>
+
+<hr class="ls0"><span class="s2">def </span><span class="s1">pytest_sessionstart(session):</span>
+    <span class="s1">available_mem = session.config.getoption(</span><span class="s4">'available_memory'</span><span class="s1">)</span>
+    <span class="s2">if </span><span class="s1">available_mem </span><span class="s2">is not None</span><span class="s1">:</span>
+        <span class="s1">os.environ[</span><span class="s4">'NPY_AVAILABLE_MEM'</span><span class="s1">] = available_mem</span>
+
+
+<span class="s3">#FIXME when yield tests are gone.</span><hr class="ls0"><span class="s1">@pytest.hookimpl()</span>
+<span class="s2">def </span><span class="s1">pytest_itemcollected(item):</span>
+    <span class="s0">&quot;&quot;&quot; 
+    Check FPU precision mode was not changed during test collection. 
+ 
+    The clumsy way we do it here is mainly necessary because numpy 
+    still uses yield tests, which can execute code at test collection 
+    time. 
+    &quot;&quot;&quot;</span>
+    <span class="s2">global </span><span class="s1">_old_fpu_mode</span>
+
+    <span class="s1">mode = get_fpu_mode()</span>
+
+    <span class="s2">if </span><span class="s1">_old_fpu_mode </span><span class="s2">is None</span><span class="s1">:</span>
+        <span class="s1">_old_fpu_mode = mode</span>
+    <span class="s2">elif </span><span class="s1">mode != _old_fpu_mode:</span>
+        <span class="s1">_collect_results[item] = (_old_fpu_mode</span><span class="s2">, </span><span class="s1">mode)</span>
+        <span class="s1">_old_fpu_mode = mode</span>
+
+<hr class="ls0"><span class="s1">@pytest.fixture(scope=</span><span class="s4">&quot;function&quot;</span><span class="s2">, </span><span class="s1">autouse=</span><span class="s2">True</span><span class="s1">)</span>
+<span class="s2">def </span><span class="s1">check_fpu_mode(request):</span>
+    <span class="s0">&quot;&quot;&quot; 
+    Check FPU precision mode was not changed during the test. 
+    &quot;&quot;&quot;</span>
+    <span class="s1">old_mode = get_fpu_mode()</span>
+    <span class="s2">yield</span>
+    <span class="s1">new_mode = get_fpu_mode()</span>
+
+    <span class="s2">if </span><span class="s1">old_mode != new_mode:</span>
+        <span class="s2">raise </span><span class="s1">AssertionError(</span><span class="s4">&quot;FPU precision mode changed from {0:#x} to {1:#x}&quot;</span>
+                             <span class="s4">&quot; during the test&quot;</span><span class="s1">.format(old_mode</span><span class="s2">, </span><span class="s1">new_mode))</span>
+
+    <span class="s1">collect_result = _collect_results.get(request.node)</span>
+    <span class="s2">if </span><span class="s1">collect_result </span><span class="s2">is not None</span><span class="s1">:</span>
+        <span class="s1">old_mode</span><span class="s2">, </span><span class="s1">new_mode = collect_result</span>
+        <span class="s2">raise </span><span class="s1">AssertionError(</span><span class="s4">&quot;FPU precision mode changed from {0:#x} to {1:#x}&quot;</span>
+                             <span class="s4">&quot; when collecting the test&quot;</span><span class="s1">.format(old_mode</span><span class="s2">,</span>
+                                                                <span class="s1">new_mode))</span>
+
+<hr class="ls0"><span class="s1">@pytest.fixture(autouse=</span><span class="s2">True</span><span class="s1">)</span>
+<span class="s2">def </span><span class="s1">add_np(doctest_namespace):</span>
+    <span class="s1">doctest_namespace[</span><span class="s4">'np'</span><span class="s1">] = numpy</span>
+<hr class="ls0"><span class="s1">@pytest.fixture(autouse=</span><span class="s2">True</span><span class="s1">)</span>
+<span class="s2">def </span><span class="s1">env_setup(monkeypatch):</span>
+    <span class="s1">monkeypatch.setenv(</span><span class="s4">'PYTHONHASHSEED'</span><span class="s2">, </span><span class="s4">'0'</span><span class="s1">)</span>
+</pre>
+</body>
+</html>

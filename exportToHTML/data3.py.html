@@ -1,0 +1,54 @@
+<html>
+<head>
+<title>data3.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #808080;}
+.s3 { color: #6a8759;}
+.s4 { color: #6897bb;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+data3.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">PIL</span>
+<span class="s0">import </span><span class="s1">os</span>
+<span class="s0">from </span><span class="s1">PIL </span><span class="s0">import </span><span class="s1">Image</span><span class="s0">, </span><span class="s1">ImageFont</span><span class="s0">, </span><span class="s1">ImageDraw</span>
+<span class="s0">import </span><span class="s1">matplotlib.pyplot </span><span class="s0">as </span><span class="s1">plt</span>
+<span class="s0">import </span><span class="s1">numpy </span><span class="s0">as </span><span class="s1">np</span>
+<span class="s0">import </span><span class="s1">tensorflow </span><span class="s0">as </span><span class="s1">tf</span>
+<span class="s0">import </span><span class="s1">tensorflow_datasets </span><span class="s0">as </span><span class="s1">tfds</span>
+<span class="s0">from </span><span class="s1">tensorflow.keras </span><span class="s0">import </span><span class="s1">layers</span>
+
+
+<span class="s2"># im = PIL.Image.new (&quot;1&quot;, size=(500, 100), color=1)</span>
+<span class="s2"># font = ImageFont.truetype (&quot;arial.ttf&quot;, 25)</span>
+<span class="s2"># d = ImageDraw.Draw (im)</span>
+<span class="s2"># d.text((14, 14), &quot;aak ff  ааа ч цлгрыка&quot;, font=font,</span>
+<span class="s2">#             anchor='lt',</span>
+<span class="s2">#             fill=0)</span>
+<span class="s2"># par_dir = r&quot;C:\Users\Admin\Downloads\\&quot;</span>
+<span class="s2"># im.save(par_dir + &quot;\\&quot; + &quot;test.png&quot;)</span>
+
+
+<span class="s1">(train_ds</span><span class="s0">, </span><span class="s1">val_ds</span><span class="s0">, </span><span class="s1">test_ds)</span><span class="s0">, </span><span class="s1">metadata = tfds.load(</span>
+    <span class="s3">'tf_flowers'</span><span class="s0">,</span>
+    <span class="s1">split=[</span><span class="s3">'train[:80%]'</span><span class="s0">, </span><span class="s3">'train[80%:90%]'</span><span class="s0">, </span><span class="s3">'train[90%:]'</span><span class="s1">]</span><span class="s0">,</span>
+    <span class="s1">with_info=</span><span class="s0">True,</span>
+    <span class="s1">as_supervised=</span><span class="s0">True,</span>
+<span class="s1">)</span>
+
+
+<span class="s1">data_augmentation = tf.keras.Sequential([</span>
+  <span class="s1">layers.RandomFlip(</span><span class="s3">&quot;horizontal_and_vertical&quot;</span><span class="s1">)</span><span class="s0">,</span>
+  <span class="s1">layers.RandomRotation(</span><span class="s4">0.2</span><span class="s1">)</span><span class="s0">,</span>
+<span class="s1">])</span>
+
+</pre>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<html>
+<head>
+<title>ocr2.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+.s3 { color: #6897bb;}
+.s4 { color: #808080;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+ocr2.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">numpy </span><span class="s0">as </span><span class="s1">np</span>
+<span class="s0">import </span><span class="s1">cv2</span>
+<span class="s0">import </span><span class="s1">pytesseract</span>
+<span class="s0">from </span><span class="s1">imutils </span><span class="s0">import </span><span class="s1">contours</span>
+<span class="s1">pytesseract.pytesseract.tesseract_cmd = </span><span class="s2">r'C:\Program Files\Tesseract-OCR\tesseract.exe'</span>
+
+
+<span class="s0">def </span><span class="s1">viewImage(image</span><span class="s0">, </span><span class="s1">name_of_window):</span>
+    <span class="s1">cv2.namedWindow(name_of_window</span><span class="s0">, </span><span class="s1">cv2.WINDOW_NORMAL)</span>
+    <span class="s1">cv2.imshow(name_of_window</span><span class="s0">, </span><span class="s1">image)</span>
+    <span class="s1">cv2.waitKey(</span><span class="s3">0</span><span class="s1">)</span>
+    <span class="s1">cv2.destroyAllWindows()</span>
+
+
+<span class="s1">image = cv2.imread(</span><span class="s2">&quot;5.jpeg&quot;</span><span class="s1">)</span>
+<span class="s4"># print('image.shape', image.shape)</span>
+<span class="s1">height</span><span class="s0">, </span><span class="s1">width</span><span class="s0">, </span><span class="s1">_ = image.shape</span>
+<span class="s1">gray = cv2.cvtColor(image</span><span class="s0">, </span><span class="s1">cv2.COLOR_BGR2GRAY)</span>
+<span class="s4">#cv2.imshow(&quot;gray&quot;, gray)</span>
+<span class="s1">thresh = cv2.threshold(gray</span><span class="s0">, </span><span class="s3">0</span><span class="s0">, </span><span class="s3">255</span><span class="s0">, </span><span class="s1">cv2.THRESH_BINARY | cv2.THRESH_OTSU)[</span><span class="s3">1</span><span class="s1">]</span>
+<span class="s4"># cv2.imshow(&quot;thresh&quot;, thresh)</span>
+<span class="s1">boxes = pytesseract.image_to_boxes(image</span><span class="s0">, </span><span class="s1">lang=</span><span class="s2">&quot;rus&quot;</span><span class="s0">, </span><span class="s1">config=</span><span class="s2">'--psm 4 '</span><span class="s1">)</span>
+<span class="s4"># d = pytesseract.image_to_data(thresh, lang=&quot;eng+rus&quot;, config='--psm 6')</span>
+<span class="s4">#print(boxes)</span>
+
+<span class="s4"># box_coord = []</span>
+<span class="s4"># for box in boxes.splitlines():</span>
+<span class="s4">#     box = box.split(&quot; &quot;)</span>
+<span class="s4">#     x, y, w, h = int(box[1]), int(box[2]), int(box[3]), int(box[4])</span>
+<span class="s4">#     image_box = cv2.rectangle(thresh, (x, height - y), (w, height - h), (50, 50, 255), 1)</span>
+<span class="s4">#     cv2.putText(thresh, box[0], (x, height - y + 13), cv2.FONT_HERSHEY_COMPLEX, 0.4, (50, 205, 50), 1)</span>
+<span class="s4">#     if (0.3*height &lt; y &lt; 0.45*height):</span>
+<span class="s4">#             # and (x &gt; 0.2*width):</span>
+<span class="s4">#         box_coord.append([w - x, h - y, box[0]])</span>
+
+<span class="s4"># for i in box_coord:</span>
+<span class="s4">#     print(i)</span>
+<span class="s4"># cv2.imshow('thresh', thresh)</span>
+
+<span class="s4"># Face recognition</span>
+<span class="s1">face_cascade = cv2.CascadeClassifier(</span><span class="s2">'haarcascade_frontalface_default.xml'</span><span class="s1">)</span>
+<span class="s4"># image = cv2.imread(image_path)</span>
+<span class="s4"># gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)</span>
+<span class="s1">faces = face_cascade.detectMultiScale(</span>
+    <span class="s1">gray</span><span class="s0">,</span>
+    <span class="s1">scaleFactor= </span><span class="s3">1.1</span><span class="s0">,</span>
+    <span class="s1">minNeighbors= </span><span class="s3">5</span><span class="s0">,</span>
+    <span class="s1">minSize=(</span><span class="s3">10</span><span class="s0">, </span><span class="s3">10</span><span class="s1">)</span>
+<span class="s1">)</span>
+
+
+<span class="s1">faces_detected = format(len(faces)) + </span><span class="s2">&quot; faces detected!&quot;</span>
+<span class="s4"># print(faces_detected)</span>
+<span class="s4"># Draw a rectangle around the faces</span>
+<span class="s0">for </span><span class="s1">(x</span><span class="s0">, </span><span class="s1">y</span><span class="s0">, </span><span class="s1">w</span><span class="s0">, </span><span class="s1">h) </span><span class="s0">in </span><span class="s1">faces:</span>
+    <span class="s1">cv2.rectangle(image</span><span class="s0">, </span><span class="s1">(x</span><span class="s0">, </span><span class="s1">y)</span><span class="s0">, </span><span class="s1">(x+w</span><span class="s0">, </span><span class="s1">y+h)</span><span class="s0">, </span><span class="s1">(</span><span class="s3">255</span><span class="s0">, </span><span class="s3">255</span><span class="s0">, </span><span class="s3">0</span><span class="s1">)</span><span class="s0">, </span><span class="s3">2</span><span class="s1">)</span>
+    <span class="s1">xc</span><span class="s0">, </span><span class="s1">yc</span><span class="s0">, </span><span class="s1">width</span><span class="s0">, </span><span class="s1">height = x</span><span class="s0">, </span><span class="s1">y</span><span class="s0">, </span><span class="s1">x+w</span><span class="s0">, </span><span class="s1">y+h</span>
+
+<span class="s4"># print(xc, yc, width, height)</span>
+<span class="s4"># viewImage(image, faces_detected)</span>
+<span class="s1">cv2.imshow(</span><span class="s2">'thresh'</span><span class="s0">, </span><span class="s1">image)</span>
+
+<span class="s4"># len(lines[i].split()) == 12</span>
+<span class="s4"># int(lines[i].split()[6]) &gt; x + 2*width</span>
+<span class="s4"># y + 0.5*height&lt; int(lines[i].split()[7]) &lt; y + 2.25*height</span>
+<span class="s4">#</span>
+<span class="s4">#</span>
+
+<span class="s4"># Tesseract reading</span>
+<span class="s1">d = pytesseract.image_to_data(gray</span><span class="s0">, </span><span class="s1">lang=</span><span class="s2">&quot;rus&quot;</span><span class="s0">, </span><span class="s1">config=</span><span class="s2">'--psm 3'</span><span class="s1">)</span>
+<span class="s1">lines = d.splitlines()</span>
+<span class="s4"># for i in range(1, len(lines)):</span>
+<span class="s4">#     if len(lines[i].split()) == 12 and (10 &lt; int(lines[i].split()[9])):</span>
+<span class="s4">#         print(lines[i].split())</span>
+<span class="s4">#</span>
+<span class="s4"># print()</span>
+<span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range(</span><span class="s3">1</span><span class="s0">, </span><span class="s1">len(lines)):</span>
+    <span class="s0">if </span><span class="s1">len(lines[i].split()) == </span><span class="s3">12</span><span class="s1">:</span>
+        <span class="s0">if </span><span class="s1">int(lines[i].split()[</span><span class="s3">6</span><span class="s1">]) &gt; (xc + </span><span class="s3">1.0</span><span class="s1">*width):</span>
+            <span class="s0">if </span><span class="s1">(yc + </span><span class="s3">0.05</span><span class="s1">*height) &gt; int(lines[i].split()[</span><span class="s3">7</span><span class="s1">]) &gt; (yc - </span><span class="s3">0.5</span><span class="s1">*height):</span>
+                <span class="s1">print(lines[i].split()[-</span><span class="s3">1</span><span class="s1">])</span>
+
+
+<span class="s1">cv2.waitKey(</span><span class="s3">0</span><span class="s1">)</span>
+
+
+</pre>
+</body>
+</html>
